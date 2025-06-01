@@ -22,8 +22,6 @@ export default function HomePage() {
             <CardDescription>Claude 3.5 Sonnetによる高精度な状況分析</CardDescription>
           </CardHeader>
         </Card>
-
-
         <Card>
           <CardHeader>
             <Clock className="w-8 h-8 text-green-600 mb-2" />
