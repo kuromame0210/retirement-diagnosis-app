@@ -25,43 +25,96 @@ export default function ResultPage() {
 
   useEffect(() => {
     const sessionData = getSession()
+
+    // ✅ デバッグ追加
+    console.log("=== resultページ - セッションデータ確認 ===")
+    console.log("sessionData:", sessionData)
+    console.log("basicAnswers存在:", !!sessionData?.basicAnswers)
+    console.log("basicAnswers内容:", sessionData?.basicAnswers)
+    console.log("simpleResult存在:", !!sessionData?.simpleResult)
+
     setSession(sessionData)
 
     if (sessionData.simpleResult) {
       setResult(sessionData.simpleResult)
       setLoading(false)
     } else {
-      analyzeBasicAnswers(sessionData.basicAnswers)
+      console.log("simpleResultが存在しないため、analyzeBasicAnswersを実行")
+      if (sessionData?.basicAnswers) {
+        analyzeBasicAnswers(sessionData.basicAnswers)
+      } else {
+        console.error("❌ basicAnswersも存在しません")
+        setError("基本診断データが見つかりません。最初からやり直してください。")
+        setLoading(false)
+      }
     }
   }, [])
+
 
   const analyzeBasicAnswers = async (answers: Record<string, string>) => {
     try {
       setLoading(true)
+
+      console.log("=== analyzeBasicAnswers開始 ===")
+      console.log("分析対象のanswers:", answers)
+
       const response = await fetch("/api/analyze-basic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers }),
       })
 
-      if (!response.ok) throw new Error("分析に失敗しました")
+      if (!response.ok) {
+        console.warn("API分析失敗 - ローカル分析を使用")
+        // ✅ API失敗時のローカル分析
+        const localResult = {
+          type: "検討型",
+          urgency: "medium" as const,
+          summary: "転職を検討している状況です。",
+          advice: "詳細な分析でより具体的なアドバイスを提供します。",
+          needsDetailedAnalysis: true
+        }
+
+        setResult(localResult)
+
+        const updatedSession = {
+          ...session,
+          basicAnswers: answers, // ✅ 明示的に保持
+          simpleResult: localResult,
+          currentStep: 3,
+          updatedAt: new Date().toISOString()
+        }
+
+        setSession(updatedSession)
+        saveSession(updatedSession)
+        return
+      }
 
       const analysisResult = await response.json()
+      console.log("分析結果:", analysisResult)
       setResult(analysisResult)
 
+      // ✅ basicAnswersを確実に保持
       const updatedSession = {
         ...session,
+        basicAnswers: answers, // ✅ 明示的に保持
         simpleResult: analysisResult,
         currentStep: 3,
+        updatedAt: new Date().toISOString()
       }
+
+      console.log("API分析後の保存セッション:", updatedSession)
       setSession(updatedSession)
       saveSession(updatedSession)
+
     } catch (err) {
+      console.error("analyzeBasicAnswers エラー:", err)
       setError(err instanceof Error ? err.message : "分析中にエラーが発生しました")
     } finally {
       setLoading(false)
     }
   }
+
 
   const getUrgencyIcon = (urgency: string) => {
     switch (urgency) {
@@ -90,12 +143,39 @@ export default function ResultPage() {
   }
 
   const continueToDetail = () => {
+    // ✅ 詳細入力に進む前にセッションデータを確実に保存
+    console.log("=== resultページ - 詳細入力遷移前 ===")
+    console.log("現在のsession:", session)
+    console.log("現在のresult:", result)
+
+    // ✅ 現在の状態を確実に保存
+    const updatedSession = {
+      ...session,
+      basicAnswers: session?.basicAnswers, // 明示的にbasicAnswersを保持
+      simpleResult: result, // 分析結果を保存
+      currentStep: 3,
+      updatedAt: new Date().toISOString()
+    }
+
+    console.log("保存するセッション:", updatedSession)
+    console.log("basicAnswers確認:", updatedSession.basicAnswers)
+
+    // セッションを更新して保存
+    setSession(updatedSession)
+    saveSession(updatedSession)
+
+    // ✅ 保存後の確認
+    const savedSession = getSession()
+    console.log("保存後の確認:", savedSession)
+    console.log("保存後のbasicAnswers:", savedSession?.basicAnswers)
+
     if (result?.needsDetailedAnalysis) {
       router.push("/diagnosis/detail")
     } else {
       router.push("/diagnosis/final")
     }
   }
+
 
   if (loading) {
     return (

@@ -178,7 +178,6 @@ export default function ChatPage() {
   )
 
 
-
   const initializeChat = useCallback(async () => {
     if (state.isInitialized) {
       debugLog("initializeChat skipped - already initialized")
@@ -188,60 +187,82 @@ export default function ChatPage() {
     debugLog("initializeChat start")
     setState((prev) => ({ ...prev, isInitialized: true }))
 
+    // ✅ 超詳細デバッグを追加
+    console.log("=== 超詳細セッションデバッグ ===")
+
+    // ローカルストレージの生データを直接確認
+    const rawStorageData = localStorage.getItem('diagnosis-session')
+    console.log("1. ローカルストレージ生データ:", rawStorageData)
+
+    // getSession()の結果を確認
     const sessionData = getSession()
-
-    // ✅ 非常に詳細なデバッグ
-    console.log("=== セッションデータ超詳細確認 ===")
-    console.log("sessionData:", sessionData)
-    console.log("sessionData type:", typeof sessionData)
-
-    // ✅ ローカルストレージの直接確認
-    const rawStorage = localStorage.getItem('diagnosis-session')
-    console.log("ローカルストレージの生データ:", rawStorage)
+    console.log("2. getSession()の結果:", sessionData)
+    console.log("3. sessionDataの型:", typeof sessionData)
+    console.log("4. sessionDataがnull:", sessionData === null)
+    console.log("5. sessionDataがundefined:", sessionData === undefined)
 
     if (sessionData) {
-      console.log("セッション内のキー一覧:", Object.keys(sessionData))
-      console.log("currentStep:", sessionData.currentStep)
-      console.log("basicAnswers存在:", 'basicAnswers' in sessionData)
-      console.log("basicAnswers値:", sessionData.basicAnswers)
-      console.log("simpleResult存在:", 'simpleResult' in sessionData)
-      console.log("textInput存在:", 'textInput' in sessionData)
+      console.log("6. sessionDataのkeys:", Object.keys(sessionData))
+      console.log("7. 各プロパティの確認:")
+      console.log("   - basicAnswers exists:", 'basicAnswers' in sessionData)
+      console.log("   - basicAnswers value:", sessionData.basicAnswers)
+      console.log("   - basicAnswers type:", typeof sessionData.basicAnswers)
+      console.log("   - simpleResult exists:", 'simpleResult' in sessionData)
+      console.log("   - textInput exists:", 'textInput' in sessionData)
+      console.log("   - currentStep:", sessionData.currentStep)
+
+      if (sessionData.basicAnswers) {
+        console.log("8. basicAnswersの詳細:")
+        console.log("   - basicAnswers keys:", Object.keys(sessionData.basicAnswers))
+        console.log("   - basicAnswers length:", Object.keys(sessionData.basicAnswers).length)
+        console.log("   - basicAnswers content:", sessionData.basicAnswers)
+      }
     }
 
-    // ✅ 条件チェックを段階的に
+    // ✅ 条件チェックを段階的に（詳細ログ付き）
     if (!sessionData) {
-      console.error("❌ sessionDataがnull/undefined")
+      console.error("❌ FAILURE: sessionDataがnull/undefined")
       setState((prev) => ({
         ...prev,
-        error: "セッションデータが見つかりません",
+        error: "セッションデータが見つかりません（デバッグ：null/undefined）",
         isGeneratingQuestion: false,
       }))
       return
     }
 
     if (!('basicAnswers' in sessionData)) {
-      console.error("❌ basicAnswersプロパティが存在しません")
+      console.error("❌ FAILURE: basicAnswersプロパティが存在しません")
       console.log("利用可能なプロパティ:", Object.keys(sessionData))
       setState((prev) => ({
         ...prev,
-        error: "基本診断データがありません。簡単診断から始めてください。",
+        error: `基本診断データがありません（デバッグ：利用可能なプロパティ: ${Object.keys(sessionData).join(', ')}）`,
         isGeneratingQuestion: false,
       }))
       return
     }
 
-    if (!sessionData.basicAnswers || Object.keys(sessionData.basicAnswers).length === 0) {
-      console.error("❌ basicAnswersが空です")
-      console.log("basicAnswersの内容:", sessionData.basicAnswers)
+    if (!sessionData.basicAnswers) {
+      console.error("❌ FAILURE: basicAnswersがfalsy")
+      console.log("basicAnswersの値:", sessionData.basicAnswers)
       setState((prev) => ({
         ...prev,
-        error: "基本診断が未完了です。簡単診断から始めてください。",
+        error: `基本診断データが空です（デバッグ：値=${JSON.stringify(sessionData.basicAnswers)}）`,
         isGeneratingQuestion: false,
       }))
       return
     }
 
-    console.log("✅ セッションデータ検証OK")
+    if (typeof sessionData.basicAnswers === 'object' && Object.keys(sessionData.basicAnswers).length === 0) {
+      console.error("❌ FAILURE: basicAnswersが空のオブジェクト")
+      setState((prev) => ({
+        ...prev,
+        error: "基本診断が未完了です（デバッグ：空のオブジェクト）",
+        isGeneratingQuestion: false,
+      }))
+      return
+    }
+
+    console.log("✅ SUCCESS: セッションデータ検証OK")
     setSession(sessionData)
     setChatHistory(sessionData.chatHistory || [])
 
@@ -252,6 +273,7 @@ export default function ChatPage() {
       router.push("/diagnosis/final")
     }
   }, [])
+
 
 
   // 初期化用useEffect（一度だけ実行）
