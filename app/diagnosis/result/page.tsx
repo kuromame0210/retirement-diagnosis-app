@@ -1,0 +1,187 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2, ArrowRight, AlertTriangle, CheckCircle, Clock } from "lucide-react"
+import { getSession, saveSession } from "@/lib/storage"
+
+interface SimpleResult {
+  type: string
+  urgency: "high" | "medium" | "low"
+  summary: string
+  advice: string
+  needsDetailedAnalysis: boolean
+}
+
+export default function ResultPage() {
+  const router = useRouter()
+  const [session, setSession] = useState<any>(null)
+  const [result, setResult] = useState<SimpleResult | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const sessionData = getSession()
+    setSession(sessionData)
+
+    if (sessionData.simpleResult) {
+      setResult(sessionData.simpleResult)
+      setLoading(false)
+    } else {
+      analyzeBasicAnswers(sessionData.basicAnswers)
+    }
+  }, [])
+
+  const analyzeBasicAnswers = async (answers: Record<string, string>) => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/analyze-basic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers }),
+      })
+
+      if (!response.ok) throw new Error("分析に失敗しました")
+
+      const analysisResult = await response.json()
+      setResult(analysisResult)
+
+      const updatedSession = {
+        ...session,
+        simpleResult: analysisResult,
+        currentStep: 3,
+      }
+      setSession(updatedSession)
+      saveSession(updatedSession)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "分析中にエラーが発生しました")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getUrgencyIcon = (urgency: string) => {
+    switch (urgency) {
+      case "high":
+        return <AlertTriangle className="w-5 h-5 text-red-500" />
+      case "medium":
+        return <Clock className="w-5 h-5 text-yellow-500" />
+      case "low":
+        return <CheckCircle className="w-5 h-5 text-green-500" />
+      default:
+        return null
+    }
+  }
+
+  const getUrgencyText = (urgency: string) => {
+    switch (urgency) {
+      case "high":
+        return "緊急度：高"
+      case "medium":
+        return "緊急度：中"
+      case "low":
+        return "緊急度：低"
+      default:
+        return ""
+    }
+  }
+
+  const continueToDetail = () => {
+    if (result?.needsDetailedAnalysis) {
+      router.push("/diagnosis/detail")
+    } else {
+      router.push("/diagnosis/final")
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+              <p>診断結果を分析中...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <Button onClick={() => window.location.reload()} className="mt-4">
+          再試行
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold mb-2">簡易診断結果</h1>
+        <p className="text-gray-600">基本的な分析結果をお示しします</p>
+      </div>
+
+      {result && (
+        <>
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>{result.type}</CardTitle>
+                <div className="flex items-center space-x-2">
+                  {getUrgencyIcon(result.urgency)}
+                  <span className="text-sm font-medium">{getUrgencyText(result.urgency)}</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">現在の状況</h3>
+                  <p className="text-gray-700">{result.summary}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">基本的なアドバイス</h3>
+                  <p className="text-gray-700">{result.advice}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {result.needsDetailedAnalysis && (
+            <Alert className="mb-6">
+              <AlertDescription>
+                より詳細な分析のため、追加の質問にお答えいただくことをお勧めします。
+                より具体的で個別化されたアドバイスを提供できます。
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex flex-col space-y-3">
+            <Button onClick={continueToDetail} size="lg">
+              {result.needsDetailedAnalysis ? "詳細診断に進む" : "最終結果を見る"}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+
+            {result.needsDetailedAnalysis && (
+              <Button variant="outline" onClick={() => router.push("/diagnosis/final")}>
+                この結果で完了する
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
