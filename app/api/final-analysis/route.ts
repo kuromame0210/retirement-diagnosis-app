@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const { basicAnswers, textInput, chatHistory, previousAnalysis } = await request.json()
 
     const prompt = `
-    
+
     君は気さくで熱量高めのキャリアアドバイザー。  
 敬語は禁止。友人へ励ますような「話し言葉」を使う。  
 例）「ほんとにキツいよね」「ちょっと休もう」「まずは～してみようか」  
