@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Star, ThumbsUp } from "lucide-react"
 import { RecommendedService } from "@/lib/services"
+import { trackEvent } from "@/lib/analytics"
 
 interface ServiceRecommendationsProps {
   services: RecommendedService[]
@@ -70,7 +71,12 @@ export default function ServiceRecommendations({ services }: ServiceRecommendati
 
               <Button 
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-                onClick={() => window.open(service.url, '_blank')}
+                onClick={
+                  () => {
+                    trackEvent('view_service', { service: service.name })
+                    window.open(service.url, '_blank')
+                  }
+                }
               >
                 詳細を見る
                 <ExternalLink className="w-4 h-4 ml-2" />

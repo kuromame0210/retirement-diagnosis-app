@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowRight, ArrowLeft } from "lucide-react"
 import { getSession, saveSession } from "@/lib/storage"
+import { trackEvent } from "@/lib/analytics"
 
 export default function DetailPage() {
   const router = useRouter()
@@ -73,16 +74,31 @@ export default function DetailPage() {
       </Card>
 
       <div className="flex flex-col space-y-3 mt-8">
-        <Button onClick={handleSubmit} size="lg" disabled={textInput.trim().length < 10}>
+        <Button onClick={
+          () => {
+            trackEvent('submit_answer', { step: 3 })
+            handleSubmit()
+          }
+        } size="lg" disabled={textInput.trim().length < 10}>
           AI問答に進む
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
 
-        <Button variant="outline" onClick={skipDetail}>
+        <Button variant="outline" onClick={
+          () => {
+            trackEvent('skip_detail', { step: 3 })
+            skipDetail()
+          }
+        }>
           入力をスキップして最終結果を見る
         </Button>
 
-        <Button variant="ghost" onClick={() => router.back()} className="self-start">
+        <Button variant="ghost" onClick={
+          () => {
+            trackEvent('back_to_detail', { step: 3 })
+            router.back()
+          }
+        } className="self-start">
           <ArrowLeft className="w-4 h-4 mr-2" />
           前に戻る
         </Button>

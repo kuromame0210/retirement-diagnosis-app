@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { Loader2, ArrowRight, MessageCircle, AlertTriangle } from "lucide-react"
 import { getSession, saveSession } from "@/lib/storage"
+import { trackEvent } from "@/lib/analytics"
 
 interface ChatMessage {
   question: string
@@ -395,7 +396,13 @@ export default function ChatPage() {
               <AlertTriangle className="w-5 h-5" />
               <span>{state.error}</span>
             </div>
-            <Button variant="outline" size="sm" onClick={retryGeneration} className="mt-2">
+            <Button variant="outline" size="sm" onClick={
+              () => {
+                trackEvent('retry_generation', { step: state.currentQuestionIndex })
+                retryGeneration()
+              }
+            } className="mt-2"
+            >
               再試行
             </Button>
           </CardContent>
@@ -458,7 +465,12 @@ export default function ChatPage() {
       {/* 回答ボタン */}
       {state.currentQuestion && !state.isGeneratingQuestion && !state.error && (
         <div className="flex justify-end">
-          <Button onClick={submitAnswer} disabled={!currentAnswer.trim()} size="lg">
+          <Button onClick={
+            () => {
+              trackEvent('submit_answer', { step: state.currentQuestionIndex })
+              submitAnswer()
+            }
+          } disabled={!currentAnswer.trim()} size="lg">
             {state.currentQuestionIndex >= 5 ? "最終結果を見る" : "回答する"}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>

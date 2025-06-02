@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, ArrowRight, AlertTriangle, CheckCircle, Clock } from "lucide-react"
 import { getSession, saveSession } from "@/lib/storage"
+import { trackEvent } from "@/lib/analytics"
 
 interface SimpleResult {
   type: string
@@ -249,7 +250,12 @@ export default function ResultPage() {
           )}
 
           <div className="flex flex-col space-y-3">
-            <Button onClick={continueToDetail} size="lg">
+            <Button onClick={
+              () => {
+                trackEvent('continue_to_detail', { step: 3 })
+                continueToDetail()
+              }
+            } size="lg">
               {result.needsDetailedAnalysis ? "詳細診断に進む" : "最終結果を見る"}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
