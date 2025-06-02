@@ -253,12 +253,6 @@ export default function ResultPage() {
               {result.needsDetailedAnalysis ? "詳細診断に進む" : "最終結果を見る"}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-
-            {result.needsDetailedAnalysis && (
-              <Button variant="outline" onClick={() => router.push("/diagnosis/final")}>
-                この結果で完了する
-              </Button>
-            )}
           </div>
         </>
       )}

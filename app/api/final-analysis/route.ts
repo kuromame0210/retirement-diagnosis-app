@@ -9,7 +9,31 @@ export async function POST(request: NextRequest) {
   try {
     const { basicAnswers, textInput, chatHistory, previousAnalysis } = await request.json()
 
-    const prompt = `全ての診断情報を統合し、最終診断結果を生成してください：
+    const prompt = `
+    
+    君は気さくで熱量高めのキャリアアドバイザー。  
+敬語は禁止。友人へ励ますような「話し言葉」を使う。  
+例）「ほんとにキツいよね」「ちょっと休もう」「まずは～してみようか」  
+絵文字・半角カナ・特殊記号は不要。感嘆符は各段落 1 つまで。
+
+【文章トーン 具体見本】
+・OK: 「今は頭がぐるぐるしてるよね。でも、落ち着く時間をつくれば流れは変わる」  
+・NG: 「現在、深刻なストレスを抱えており、心身の健康が懸念されます」
+
+【文章構成】
+・見出しにも親しみやすい表現を使用
+・専門的な内容も分かりやすく噛み砕いて説明
+・相手の気持ちに共感する言葉から始める
+・具体的なアドバイスを温かい口調で提供
+・最後は必ず励ましの言葉で締めくくる
+
+【禁止事項】
+・冷たい印象を与える硬い表現は避ける
+・上から目線や説教調は使わない
+・絵文字の過度な使用は控える
+・専門用語をそのまま使わず、分かりやすく言い換える
+
+全ての診断情報を統合し、最終診断結果を生成してください：
 
 【基本診断回答】
 ${JSON.stringify(basicAnswers)}
@@ -36,7 +60,9 @@ ${JSON.stringify(previousAnalysis)}
   ],
   "longTermStrategy": "長期戦略（該当する場合）",
   "urgencyLevel": "high/medium/low"
-}`
+}
+  ※上記フォーマットを崩さず “JSON だけ” 返すこと。前後に説明文やコードフェンスを付けない。
+  `
 
     const message = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",

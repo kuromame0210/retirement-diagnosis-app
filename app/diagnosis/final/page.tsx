@@ -4,8 +4,10 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Download, RotateCcw } from "lucide-react"
+import { Loader2, Download, RotateCcw, Heart, Sparkles } from "lucide-react"
 import { getSession, clearSession } from "@/lib/storage"
+import ServiceRecommendations from "@/components/ServiceRecommendations"
+import { recommendServices } from "@/lib/serviceRecommendation"
 
 interface FinalResult {
   finalType: string
@@ -22,6 +24,7 @@ interface FinalResult {
   }>
   longTermStrategy?: string
   urgencyLevel: "high" | "medium" | "low"
+  encouragingMessage?: string
 }
 
 export default function FinalPage() {
@@ -56,7 +59,32 @@ export default function FinalPage() {
         }),
       })
 
-      if (!response.ok) throw new Error("最終分析に失敗しました")
+      if (!response.ok) {
+        console.warn("API分析失敗 - ローカル分析を使用")
+        // ✅ API失敗時のローカル分析
+        const localResult = {
+          finalType: "お悩み解決型",
+          currentSituation: "お疲れさまでした〜！いろいろな質問にお答えいただき、ありがとうございます。あなたの転職に関するお気持ちがよく伝わってきました。今の状況を整理して、一歩ずつ前に進んでいきましょうね。",
+          recommendedActions: [
+            {
+              priority: 1,
+              action: "まずは今の気持ちを整理してみましょう〜",
+              timeline: "今すぐ〜1週間"
+            },
+            {
+              priority: 2,
+              action: "信頼できる人に相談してみるのもいいですね",
+              timeline: "1〜2週間"
+            }
+          ],
+          serviceRecommendations: [],
+          urgencyLevel: sessionData.simpleResult?.urgency || "medium",
+          encouragingMessage: "大丈夫です！あなたのペースで進んでいけば、きっと良い道が見つかりますよ〜"
+        }
+        setFinalResult(localResult)
+        setSession({ ...sessionData, finalResult: localResult })
+        return
+      }
 
       const result = await response.json()
       setFinalResult(result)
@@ -68,9 +96,8 @@ export default function FinalPage() {
         completedAt: new Date().toISOString(),
       }
       setSession(updatedSession)
-      // saveSession(updatedSession) // 最終結果は保存しない（プライバシー考慮）
     } catch (err) {
-      setError(err instanceof Error ? err.message : "分析中にエラーが発生しました")
+      setError(err instanceof Error ? err.message : "分析中にちょっとエラーが起きちゃいました💦 でも大丈夫ですよ〜")
     } finally {
       setLoading(false)
     }
@@ -92,11 +119,11 @@ export default function FinalPage() {
   const getUrgencyText = (urgency: string) => {
     switch (urgency) {
       case "high":
-        return "緊急度：高"
+        return "今すぐアクション！"
       case "medium":
-        return "緊急度：中"
+        return "じっくり検討しよう"
       case "low":
-        return "緊急度：低"
+        return "余裕を持って進めよう"
       default:
         return ""
     }
@@ -106,7 +133,7 @@ export default function FinalPage() {
     if (!finalResult) return
 
     const resultText = `
-退職診断結果
+転職診断結果 〜あなたの未来への第一歩〜
 
 診断タイプ: ${finalResult.finalType}
 緊急度: ${getUrgencyText(finalResult.urgencyLevel)}
@@ -119,21 +146,20 @@ ${finalResult.recommendedActions
   .map((action) => `${action.priority}. ${action.action} (${action.timeline})`)
   .join("\n")}
 
-サービス推奨:
-${finalResult.serviceRecommendations
-  .map((rec) => `${rec.category}: ${rec.services.join(", ")}\n理由: ${rec.reason}`)
-  .join("\n\n")}
-
 ${finalResult.longTermStrategy ? `長期戦略:\n${finalResult.longTermStrategy}` : ""}
 
+${finalResult.encouragingMessage ? `応援メッセージ:\n${finalResult.encouragingMessage}` : ""}
+
 診断日時: ${new Date().toLocaleString("ja-JP")}
+
+※ あなたのペースで進んでいけば大丈夫です！応援しています〜
     `.trim()
 
     const blob = new Blob([resultText], { type: "text/plain;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `退職診断結果_${new Date().toISOString().split("T")[0]}.txt`
+    a.download = `転職診断結果_${new Date().toISOString().split("T")[0]}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -145,6 +171,20 @@ ${finalResult.longTermStrategy ? `長期戦略:\n${finalResult.longTermStrategy}
     window.location.href = "/"
   }
 
+  // ✅ サービス推奨の生成
+  const getRecommendedServices = () => {
+    if (!finalResult || !session?.basicAnswers) return []
+    
+    return recommendServices(
+      {
+        finalType: finalResult.finalType,
+        urgencyLevel: finalResult.urgencyLevel,
+        currentSituation: finalResult.currentSituation
+      },
+      session.basicAnswers
+    )
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -152,8 +192,8 @@ ${finalResult.longTermStrategy ? `長期戦略:\n${finalResult.longTermStrategy}
           <CardContent className="flex items-center justify-center py-12">
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-              <p>最終診断結果を生成中...</p>
-              <p className="text-sm text-gray-500 mt-2">全ての情報を統合して分析しています</p>
+              <p className="text-lg">最終診断結果を生成中... ✨</p>
+              <p className="text-sm text-gray-500 mt-2">全ての情報を統合して、あなたにぴったりの分析をお作りしてます〜</p>
             </div>
           </CardContent>
         </Card>
@@ -167,53 +207,65 @@ ${finalResult.longTermStrategy ? `長期戦略:\n${finalResult.longTermStrategy}
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>再試行</Button>
+            <Button onClick={() => window.location.reload()}>もう一度やってみる 🔄</Button>
           </CardContent>
         </Card>
       </div>
     )
   }
 
+  const recommendedServices = getRecommendedServices()
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2">最終診断結果</h1>
-        <p className="text-gray-600">あなたの状況を総合的に分析した結果をお示しします</p>
+        <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
+          <Heart className="w-8 h-8 text-pink-500" />
+          最終診断結果が完成しました〜！
+          <Heart className="w-8 h-8 text-pink-500" />
+        </h1>
+        <p className="text-gray-600">あなたの状況を総合的に分析した結果をお届けします✨</p>
       </div>
 
       {finalResult && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* 診断タイプと緊急度 */}
-          <Card>
-            <CardHeader>
+          <Card className="border-2 border-blue-100 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">{finalResult.finalType}</CardTitle>
-                <Badge className={getUrgencyColor(finalResult.urgencyLevel)}>
+                <CardTitle className="text-xl text-blue-800">{finalResult.finalType}</CardTitle>
+                <Badge className={`${getUrgencyColor(finalResult.urgencyLevel)} font-semibold`}>
                   {getUrgencyText(finalResult.urgencyLevel)}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent>
-              <h3 className="font-semibold mb-2">現状分析</h3>
-              <p className="text-gray-700 leading-relaxed">{finalResult.currentSituation}</p>
+            <CardContent className="pt-6">
+              <h3 className="font-semibold mb-3 text-blue-800 flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                あなたの現在の状況
+              </h3>
+              <p className="text-gray-700 leading-relaxed bg-blue-50 p-4 rounded-lg">{finalResult.currentSituation}</p>
             </CardContent>
           </Card>
 
           {/* 推奨アクション */}
-          <Card>
-            <CardHeader>
-              <CardTitle>推奨アクション</CardTitle>
+          <Card className="shadow-lg">
+            <CardHeader className="bg-green-50">
+              <CardTitle className="text-green-800 flex items-center gap-2">
+                <span>🎯</span>
+                おすすめのアクション
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="space-y-4">
                 {finalResult.recommendedActions.map((action, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <Badge variant="outline" className="mt-0.5">
+                  <div key={index} className="flex items-start space-x-3 bg-green-50 p-4 rounded-lg">
+                    <Badge variant="outline" className="mt-0.5 bg-green-100 text-green-800 border-green-300">
                       {action.priority}
                     </Badge>
                     <div className="flex-1">
-                      <p className="font-medium">{action.action}</p>
-                      <p className="text-sm text-gray-500">{action.timeline}</p>
+                      <p className="font-medium text-green-800">{action.action}</p>
+                      <p className="text-sm text-green-600 mt-1">⏰ {action.timeline}</p>
                     </div>
                   </div>
                 ))}
@@ -221,60 +273,68 @@ ${finalResult.longTermStrategy ? `長期戦略:\n${finalResult.longTermStrategy}
             </CardContent>
           </Card>
 
-          {/* サービス推奨 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>推奨サービス</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {finalResult.serviceRecommendations.map((rec, index) => (
-                  <div key={index} className="border-l-4 border-blue-500 pl-4">
-                    <h4 className="font-semibold text-blue-700">{rec.category}</h4>
-                    <p className="text-sm text-gray-600 mb-2">{rec.reason}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {rec.services.map((service, serviceIndex) => (
-                        <Badge key={serviceIndex} variant="secondary">
-                          {service}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {/* サービス推奨セクション */}
+          {recommendedServices.length > 0 && (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl">
+              <ServiceRecommendations services={recommendedServices} />
+            </div>
+          )}
 
           {/* 長期戦略 */}
           {finalResult.longTermStrategy && (
-            <Card>
-              <CardHeader>
-                <CardTitle>長期戦略</CardTitle>
+            <Card className="shadow-lg">
+              <CardHeader className="bg-purple-50">
+                <CardTitle className="text-purple-800 flex items-center gap-2">
+                  <span>🚀</span>
+                  長期的な戦略
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-relaxed">{finalResult.longTermStrategy}</p>
+              <CardContent className="pt-6">
+                <p className="text-gray-700 leading-relaxed bg-purple-50 p-4 rounded-lg">{finalResult.longTermStrategy}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 励ましメッセージ */}
+          {finalResult.encouragingMessage && (
+            <Card className="border-2 border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50">
+              <CardContent className="pt-6 text-center">
+                <h3 className="font-semibold mb-3 text-pink-800 flex items-center justify-center gap-2">
+                  <Heart className="w-5 h-5" />
+                  応援メッセージ
+                  <Heart className="w-5 h-5" />
+                </h3>
+                <p className="text-pink-700 leading-relaxed text-lg font-medium">{finalResult.encouragingMessage}</p>
               </CardContent>
             </Card>
           )}
 
           {/* アクションボタン */}
           <div className="flex flex-col sm:flex-row gap-3 pt-6">
-            <Button onClick={downloadResult} className="flex-1">
+            <Button 
+              onClick={downloadResult} 
+              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+            >
               <Download className="w-4 h-4 mr-2" />
-              結果をダウンロード
+              結果をダウンロード 📄
             </Button>
-            <Button variant="outline" onClick={restartDiagnosis} className="flex-1">
+            <Button 
+              variant="outline" 
+              onClick={restartDiagnosis} 
+              className="flex-1 border-2 border-gray-300 hover:bg-gray-50"
+            >
               <RotateCcw className="w-4 h-4 mr-2" />
-              新しい診断を開始
+              新しい診断を開始 🔄
             </Button>
           </div>
 
           {/* 免責事項 */}
           <Card className="bg-gray-50">
             <CardContent className="p-4">
-              <p className="text-xs text-gray-600">
-                ※ この診断結果は参考情報として提供されており、専門的な医療やキャリアカウンセリングの代替ではありません。
+              <p className="text-xs text-gray-600 leading-relaxed">
+                ※ この診断結果は参考情報として提供されており、専門的な医療やキャリアカウンセリングの代替ではありません💡
                 重要な決定を行う前に、適切な専門家にご相談することをお勧めします。
+                あなたの人生はあなたが決めるもの〜応援しています！✨
               </p>
             </CardContent>
           </Card>

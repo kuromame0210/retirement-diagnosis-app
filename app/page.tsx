@@ -14,7 +14,7 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 mb-12">
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
         <Card>
           <CardHeader>
             <Brain className="w-8 h-8 text-blue-600 mb-2" />
@@ -46,7 +46,7 @@ export default function HomePage() {
           </CardHeader>
         </Card>
       </div>
-
+      
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>診断の流れ</CardTitle>
@@ -87,13 +87,14 @@ export default function HomePage() {
         </CardContent>
       </Card>
 
-      <div className="text-center">
+      <div className="text-center mb-6">
         <Link href="/diagnosis/basic">
-          <Button size="lg" className="px-8 py-3 text-lg">
+          <Button size="lg" className="text-lg" style={{ padding: "2rem" }}>
             診断を開始する
           </Button>
         </Link>
       </div>
+
     </div>
   )
 }
