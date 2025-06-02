@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import Script from "next/script"
 import { Inter } from "next/font/google"
 import GaPageView from "@/components/ga-page-view"
@@ -43,8 +44,10 @@ export default function RootLayout({
       </head>
 
       <body className={inter.className}>
-        {/* page_view を送るクライアント側フック */}
-        <GaPageView />
+        <Suspense fallback={null}>
+          {/* page_view を送るクライアント側フック */}
+          <GaPageView />
+        </Suspense>
 
         {/* 画面本体 */}
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
