@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { saveSession, getSession } from "@/lib/storage"
+import { trackEvent } from "@/lib/analytics"
 
 const questions = [
   {
@@ -144,12 +145,22 @@ export default function BasicDiagnosisPage() {
       </Card>
 
       <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={prevQuestion} disabled={currentQuestion === 0}>
+        <Button variant="outline" onClick={
+          () => {
+            trackEvent('prev_question', { step: currentQuestion })
+            prevQuestion()
+          }
+        } disabled={currentQuestion === 0}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           前の質問
         </Button>
 
-        <Button onClick={nextQuestion} disabled={!answers[questions[currentQuestion].id]}>
+        <Button onClick={
+          () => {
+            trackEvent('next_question', { step: currentQuestion })
+            nextQuestion()
+          }
+        } disabled={!answers[questions[currentQuestion].id]}>
           {currentQuestion === questions.length - 1 ? "結果を見る" : "次の質問"}
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>

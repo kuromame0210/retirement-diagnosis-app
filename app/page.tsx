@@ -1,8 +1,9 @@
-
+"use client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Brain, Clock, Shield, Users } from "lucide-react"
+import { trackEvent } from "@/lib/analytics"
 
 export default function HomePage() {
   return (
@@ -90,7 +91,11 @@ export default function HomePage() {
 
       <div className="text-center mb-6">
         <Link href="/diagnosis/basic">
-          <Button size="lg" className="text-lg" style={{ padding: "2rem" }}>
+          <Button size="lg" className="text-lg" style={{ padding: "2rem" }}
+          onClick={() => {
+            trackEvent('start_diagnosis', { step: 1 })
+          }}
+          >
             診断を開始する
           </Button>
         </Link>
