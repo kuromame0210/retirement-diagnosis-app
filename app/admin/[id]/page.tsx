@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'   // これだけで常に最新
 
 // src/app/admin/[id]/page.tsx
 import { supabaseAdmin } from "@/lib/supabase"
+import { PREF_MAP } from "@/lib/prefecture"
 
 export default async function DiagnosisDetail({
   params,
@@ -13,6 +14,11 @@ export default async function DiagnosisDetail({
     .select("*")
     .eq("user_id", params.id)
     .single()
+
+  const prefName =
+    data.country_code === 'JP'
+      ? PREF_MAP[(data.region_code || '').padStart(2, '0')] ?? '不明'
+      : data.country_code ?? '不明'
 
   if (error || !data) return <div>データが見つかりません</div>
 
@@ -84,7 +90,7 @@ export default async function DiagnosisDetail({
         <h3 className="font-semibold mb-2">アクセス情報</h3>
         <p>IP アドレス: {data.client_ip ?? "—"}</p>
         <p>国コード&nbsp;&nbsp;&nbsp;: {data.country_code ?? "—"}</p>
-        <p>都道府県コード: {data.region_code ?? "—"}</p>
+        <p>都道府県: {prefName}</p>
         <div className="mt-2">
           <p>デバイス: {data.device_type ?? "—"}</p>
           <p>OS&nbsp;&nbsp;&nbsp;&nbsp;: {data.device_os ?? "—"}</p>
