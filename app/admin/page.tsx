@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'   // これだけで常に最新
+
 // src/app/admin/page.tsx
 import { supabaseAdmin } from "@/lib/supabase"
 import Link from "next/link"

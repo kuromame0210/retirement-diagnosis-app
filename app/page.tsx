@@ -10,17 +10,6 @@ import { saveSession, getSession } from "@/lib/storage"
 
 export default function HomePage() {
 
-  useEffect(() => {
-    const uidInfo = ensureUserId()
-    if(uidInfo?.uid) {
-      console.log(uidInfo)
-      saveSession({
-        ...getSession(),
-          userId: uidInfo.uid,
-        })
-    }
-  }, [])
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="text-center mb-12">
@@ -116,6 +105,13 @@ export default function HomePage() {
         </Link>
       </div>
 
+      <div className="text-center mt-6">
+        <Link href="/privacy" className="text-sm text-gray-500 hover:underline">
+          プライバシーポリシー
+        </Link>
+      </div>
+
     </div>
+    
   )
 }

@@ -1,3 +1,5 @@
+import { ensureUserId } from "@/lib/userId"
+
 export const STORAGE_KEY = "diagnosis_session"
 
 export interface DiagnosisSession {
@@ -78,22 +80,18 @@ export function addClickedService(service: {
   }
 }
 
-export const saveSession = (data: Partial<DiagnosisSession>) => {
-  if (typeof window === "undefined") return
-  try {
-    const updated = {
-      ...getSession(),
-      ...data,
-      updatedAt: new Date().toISOString(),
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+/* --- 2. saveSession を簡潔に -------------------- */
+export const saveSession = (patch: Partial<DiagnosisSession>) => {
+  if (typeof window === 'undefined') return
 
-    console.log("saveSession", {updated})
-    /* 追加：保存したら即同期 */
-    syncSessionToServer().catch(() => {})
-  } catch (e) {
-    console.error("Failed to save session:", e)
+  const current = getSession()                // 必ず userId を含む
+  const updated = {
+    ...current,
+    ...patch,
+    updatedAt: new Date().toISOString(),
   }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  // syncSessionToServer(updated).catch(console.warn)
 }
 
 export const getSession = (): DiagnosisSession => {

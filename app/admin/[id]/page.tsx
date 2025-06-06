@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'   // これだけで常に最新
+
 // src/app/admin/[id]/page.tsx
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -77,6 +79,19 @@ export default async function DiagnosisDetail({
           長期戦略: {data.final_long_strategy}
         </p>
       </section>
+
+      <section className="bg-white p-4 rounded border">
+        <h3 className="font-semibold mb-2">アクセス情報</h3>
+        <p>IP アドレス: {data.client_ip ?? "—"}</p>
+        <p>国コード&nbsp;&nbsp;&nbsp;: {data.country_code ?? "—"}</p>
+        <p>都道府県コード: {data.region_code ?? "—"}</p>
+        <div className="mt-2">
+          <p>デバイス: {data.device_type ?? "—"}</p>
+          <p>OS&nbsp;&nbsp;&nbsp;&nbsp;: {data.device_os ?? "—"}</p>
+          <p>ブラウザ: {data.device_browser ?? "—"}</p>
+        </div>
+      </section>
+
     </div>
   )
 }

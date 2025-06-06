@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase"
+import { UAParser } from "ua-parser-js"
+
+/* ───────── ① 追加：IP & Geo を取得 ───────── */
+function getClientIp(req: NextRequest) {
+  const fwd = req.headers.get("x-forwarded-for")
+  return fwd ? fwd.split(",")[0].trim() : "0.0.0.0"
+}
+
+function getGeo(req: NextRequest) {
+  // Vercel Edge が自動で付ける地理ヘッダー
+  return {
+    country: req.headers.get("x-vercel-ip-country") ?? null,
+    region:  req.headers.get("x-vercel-ip-country-region") ?? null,
+  }
+}
+
 
 /* セッションJSON → テーブル行へマッピング */
 function mapSessionToRow(s: any) {
@@ -53,17 +69,38 @@ function mapSessionToRow(s: any) {
   }
 }
 
+/* ───────── ③ POST ハンドラ ───────── */
 export async function POST(req: NextRequest) {
   try {
     const { session } = await req.json()
-    const row = mapSessionToRow(session)
-    console.log("row", {row})
+    if (!session?.userId) {
+      return NextResponse.json({ error: "missing userId" }, { status: 400 })
+    }
+
+    /* --- 追加部分: IP / Geo / Device --- */
+    const ip  = getClientIp(req)
+    const geo = getGeo(req)
+    const uaParser = new UAParser(req.headers.get("user-agent") || "")
+    const device   = uaParser.getDevice()
+    const os       = uaParser.getOS()
+    const browser  = uaParser.getBrowser()
+
+    /* --- 既存マッピング + 追加入力 --- */
+    const row = {
+      ...mapSessionToRow(session),
+
+      client_ip:     ip,
+      country_code:  geo.country,
+      region_code:   geo.region,
+
+      device_type:    device.type ?? "desktop",
+      device_os:      os.name    ?? null,
+      device_browser: browser.name ?? null,
+    }
 
     const { error } = await supabaseAdmin
       .from("career_user_diagnosis")
-      .upsert(row, { onConflict: "user_id" })
-
-    console.log("error", {error})
+      .upsert(row, { onConflict: "user_id" })   // user_id で 1 行固定
 
     if (error) throw error
     return NextResponse.json({ ok: true })
