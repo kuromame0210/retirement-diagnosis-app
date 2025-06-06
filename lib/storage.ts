@@ -2,7 +2,7 @@ export const STORAGE_KEY = "diagnosis_session"
 
 export interface DiagnosisSession {
   sessionId: string
-  userId?: string
+  userId: string
   currentStep: number
   basicAnswers: Record<string, string>
   textInput: string
@@ -121,6 +121,7 @@ export const clearSession = () => {
 }
 
 const createNewSession = (): DiagnosisSession => ({
+  userId: crypto.randomUUID(),
   sessionId: crypto.randomUUID(),
   currentStep: 1,
   basicAnswers: {},
