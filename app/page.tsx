@@ -1,11 +1,26 @@
 "use client"
 import Link from "next/link"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Brain, Clock, Shield, Users } from "lucide-react"
 import { trackEvent } from "@/lib/analytics"
+import { ensureUserId } from "@/lib/userId"
+import { saveSession, getSession } from "@/lib/storage"
 
 export default function HomePage() {
+
+  useEffect(() => {
+    const uidInfo = ensureUserId()
+    if(uidInfo?.uid) {
+      console.log(uidInfo)
+      saveSession({
+        ...getSession(),
+          userId: uidInfo.uid,
+        })
+    }
+  }, [])
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="text-center mb-12">

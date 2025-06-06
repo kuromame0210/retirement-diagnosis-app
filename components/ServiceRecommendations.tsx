@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ExternalLink, Star, ThumbsUp } from "lucide-react"
 import { RecommendedService } from "@/lib/services"
 import { trackEvent } from "@/lib/analytics"
+import { addClickedService } from "@/lib/storage"
 
 interface ServiceRecommendationsProps {
   services: RecommendedService[]
@@ -69,11 +70,13 @@ export default function ServiceRecommendations({ services }: ServiceRecommendati
                 ))}
               </div>
 
-              <Button 
+              <Button
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                 onClick={
                   () => {
-                    trackEvent('view_service', { service: service.name })
+                    console.log('clicked', {service})
+                    addClickedService({ id: service.id, name: service.name, url: service.url })
+                    trackEvent('view_service_'+service.id, { service: service.name })
                     window.open(service.url, '_blank')
                   }
                 }
