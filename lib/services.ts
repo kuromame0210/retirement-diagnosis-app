@@ -31,7 +31,6 @@ export interface ServiceInfo {
       url: "http://msm.to/D5GzMLt",
       tags: ["退職", "ストレス", "ブラック企業"]
     },
-  
     /* 転職支援 -------------------------------------------------------- */
     {
       id: "albatross",
@@ -93,7 +92,6 @@ export interface ServiceInfo {
       url: "https://h.accesstrade.net/sp/cc?rk=0100pw7e00nyac",
       tags: ["第二新卒", "既卒", "未経験OK"]
     },
-  
     /* フリーランス・副業 -------------------------------------------- */
     {
       id: "tech-stock",
@@ -115,7 +113,6 @@ export interface ServiceInfo {
       url: "https://h.accesstrade.net/sp/cc?rk=0100pqmy00nyac",
       tags: ["副業", "稼ぐ", "リスク分散"]
     },
-  
     /* 学習・留学 ------------------------------------------------------ */
     {
       id: "merise",
@@ -137,7 +134,6 @@ export interface ServiceInfo {
       url: "http://msm.to/7ditacB",
       tags: ["ライティング", "マーケティング", "オンライン講座"]
     },
-  
     /* 特定業界・働き方 ---------------------------------------------- */
     {
       id: "resort-baito",

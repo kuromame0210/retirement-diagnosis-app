@@ -1,5 +1,7 @@
 import { getSession, syncSessionToServer } from "@/lib/storage"
 
+// デバウンス用のタイマー
+let syncDebounceTimer: NodeJS.Timeout | null = null
 
 // src/lib/analytics.ts
 export const trackEvent = (
@@ -13,14 +15,25 @@ export const trackEvent = (
 
     ;(window as any).gtag('event', action, params)
 
-    /* ========= Supabase UPSERT ========= */
+    /* ========= Supabase UPSERT（デバウンス付き） ========= */
     try {
       const session = getSession()                     // localStorage の最新
       console.log("[trackEvent] send", { action, session })
 
-      // 非同期で送信（失敗しても UI を止めない）
-      syncSessionToServer()
-        .catch((e) => console.warn("syncSessionToServer failed", e))
+      // 既存のタイマーをクリア
+      if (syncDebounceTimer) {
+        clearTimeout(syncDebounceTimer)
+      }
+
+      // 500ms後に同期実行（高頻度クリックを防ぐ）
+      syncDebounceTimer = setTimeout(() => {
+        syncSessionToServer()
+          .catch((e) => console.warn("syncSessionToServer failed", e))
+          .finally(() => {
+            syncDebounceTimer = null
+          })
+      }, 500)
+
     } catch (e) {
       console.warn("trackEvent: getSession failed", e)
     }

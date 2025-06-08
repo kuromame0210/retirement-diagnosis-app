@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Brain, Clock, Shield, Users } from "lucide-react"
 import { trackEvent } from "@/lib/analytics"
-import { ensureUserId } from "@/lib/userId"
-import { saveSession, getSession } from "@/lib/storage"
 
 export default function HomePage() {
 

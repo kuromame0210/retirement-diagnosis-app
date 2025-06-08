@@ -1,5 +1,3 @@
-import { ensureUserId } from "@/lib/userId"
-
 export const STORAGE_KEY = "diagnosis_session"
 
 export interface DiagnosisSession {
@@ -133,19 +131,34 @@ const createNewSession = (): DiagnosisSession => ({
 })
 
 /* サーバーへ非同期同期  ------------------------------ */
+let ongoingSyncPromise: Promise<void> | null = null
+
 export async function syncSessionToServer() {
   if (typeof window === "undefined") return
+  
+  // 既に同期処理中の場合は、その処理の完了を待つ
+  if (ongoingSyncPromise) {
+    console.log("syncSessionToServer: already in progress, waiting...")
+    return ongoingSyncPromise
+  }
+  
   try {
-    console.log("syncSessionToServer")
+    console.log("syncSessionToServer: starting new sync")
     const session = getSession()
-    /* keepalive 付き POST：ページ遷移中でも完走しやすい */
-    await fetch("/api/save-diagnosis", {
-      method: "POST",
+    
+    ongoingSyncPromise = fetch("/api/save-diagnosis", {
+      method: "POST", 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session }),
       keepalive: true,
+    }).then(() => {
+      console.log("syncSessionToServer: completed successfully")
     })
+    
+    await ongoingSyncPromise
   } catch (err) {
     console.warn("syncSessionToServer failed", err)
+  } finally {
+    ongoingSyncPromise = null
   }
 }
