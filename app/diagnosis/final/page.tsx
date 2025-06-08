@@ -37,6 +37,11 @@ export default function FinalPage() {
     const sessionData = getSession()
     setSession(sessionData)
 
+    // Facebook Pixel conversion tracking for final page
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'PageView');
+    }
+
     if (sessionData.finalResult) {
       setFinalResult(sessionData.finalResult)
       setLoading(false)
