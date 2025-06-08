@@ -95,6 +95,7 @@ export default function HomePage() {
         <Link href="/diagnosis/basic">
           <Button size="lg" className="text-lg" style={{ padding: "2rem" }}
           onClick={() => {
+            console.log("HomePage: Start diagnosis button clicked")
             trackEvent('start_diagnosis', { step: 1 })
           }}
           >

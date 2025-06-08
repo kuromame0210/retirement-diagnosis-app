@@ -4,8 +4,6 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { saveSession, getSession } from "@/lib/storage"
@@ -71,12 +69,15 @@ export default function BasicDiagnosisPage() {
   const [session, setSession] = useState<any>(null)
 
   useEffect(() => {
+    console.log("basic/page: useEffect started")
     const sessionData = getSession()
+    console.log("basic/page: session loaded:", sessionData.userId)
     setSession(sessionData)
     setAnswers(sessionData.basicAnswers || {})
   }, [])
 
-  const handleAnswer = (value: string) => {
+  const handleAnswerClick = (value: string) => {
+    console.log("Answer clicked:", value)
     const newAnswers = {
       ...answers,
       [questions[currentQuestion].id]: value,
@@ -90,12 +91,25 @@ export default function BasicDiagnosisPage() {
     }
     setSession(updatedSession)
     saveSession(updatedSession)
+
+    // trackEvent発火
+    trackEvent('answer_selected', { 
+      question: questions[currentQuestion].id,
+      answer: value,
+      step: currentQuestion + 1
+    })
+
+    // 少し遅延してから次の質問へ自動進行
+    setTimeout(() => {
+      nextQuestion()
+    }, 300)
   }
 
   const nextQuestion = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
     } else {
+      trackEvent('complete_basic_diagnosis', { totalQuestions: questions.length })
       router.push("/diagnosis/result")
     }
   }
@@ -127,20 +141,36 @@ export default function BasicDiagnosisPage() {
           <CardTitle className="text-lg">{questions[currentQuestion].question}</CardTitle>
         </CardHeader>
         <CardContent>
-          <RadioGroup
-            value={answers[questions[currentQuestion].id] || ""}
-            onValueChange={handleAnswer}
-            className="space-y-3"
-          >
-            {questions[currentQuestion].options.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <RadioGroupItem value={option.value} id={option.value} />
-                <Label htmlFor={option.value} className="flex-1 cursor-pointer">
-                  {option.label}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+          <div className="space-y-3">
+            {questions[currentQuestion].options.map((option) => {
+              const isSelected = answers[questions[currentQuestion].id] === option.value
+              return (
+                <Button
+                  key={option.value}
+                  variant={isSelected ? "default" : "outline"}
+                  className={`w-full p-4 h-auto text-left justify-start transition-all duration-200 ${
+                    isSelected 
+                      ? "bg-blue-600 text-white border-blue-600 shadow-md" 
+                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                  }`}
+                  onClick={() => handleAnswerClick(option.value)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      isSelected 
+                        ? "border-white bg-white" 
+                        : "border-gray-400"
+                    }`}>
+                      {isSelected && (
+                        <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                      )}
+                    </div>
+                    <span className="text-base">{option.label}</span>
+                  </div>
+                </Button>
+              )
+            })}
+          </div>
         </CardContent>
       </Card>
 
@@ -155,15 +185,25 @@ export default function BasicDiagnosisPage() {
           前の質問
         </Button>
 
-        <Button onClick={
-          () => {
-            trackEvent('next_question', { step: currentQuestion })
-            nextQuestion()
-          }
-        } disabled={!answers[questions[currentQuestion].id]}>
-          {currentQuestion === questions.length - 1 ? "結果を見る" : "次の質問"}
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
+        {/* 回答済みの場合のみ次の質問ボタンを表示 */}
+        {answers[questions[currentQuestion].id] && (
+          <Button 
+            onClick={() => {
+              trackEvent('skip_to_next', { step: currentQuestion })
+              nextQuestion()
+            }}
+          >
+            {currentQuestion === questions.length - 1 ? "結果を見る" : "次の質問"}
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        )}
+
+        {/* 未回答の場合は選択を促すメッセージ */}
+        {!answers[questions[currentQuestion].id] && (
+          <div className="text-sm text-gray-500 flex items-center">
+            選択肢をクリックすると自動で次に進みます
+          </div>
+        )}
       </div>
     </div>
   )

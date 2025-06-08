@@ -94,15 +94,31 @@ export const saveSession = (patch: Partial<DiagnosisSession>) => {
 
 export const getSession = (): DiagnosisSession => {
   if (typeof window === "undefined") {
+    // SSR時は空のセッションを返す（新規作成はクライアントサイドのみ）
+    console.log("getSession: SSR environment, returning empty session")
     return createNewSession()
   }
 
   try {
     const data = localStorage.getItem(STORAGE_KEY)
-    return data ? JSON.parse(data) : createNewSession()
+    if (data) {
+      const parsed = JSON.parse(data)
+      console.log("getSession: Found existing session:", parsed.userId)
+      return parsed
+    } else {
+      console.log("getSession: No existing session, creating new one")
+      const newSession = createNewSession()
+      // 新規作成時は即座にlocalStorageに保存
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession))
+      return newSession
+    }
   } catch (error) {
     console.error("Failed to get session:", error)
-    return createNewSession()
+    console.log("getSession: Error occurred, creating new session")
+    const newSession = createNewSession()
+    // エラー時も即座に保存
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession))
+    return newSession
   }
 }
 

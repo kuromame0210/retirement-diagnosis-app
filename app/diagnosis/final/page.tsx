@@ -181,7 +181,8 @@ ${finalResult.encouragingMessage ? `応援メッセージ:\n${finalResult.encour
         urgencyLevel: finalResult.urgencyLevel,
         currentSituation: finalResult.currentSituation
       },
-      session.basicAnswers
+      session.basicAnswers,
+      session.textInput  // 自由記述も追加
     )
   }
 
@@ -275,8 +276,38 @@ ${finalResult.encouragingMessage ? `応援メッセージ:\n${finalResult.encour
 
           {/* サービス推奨セクション */}
           {recommendedServices.length > 0 && (
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl">
-              <ServiceRecommendations services={recommendedServices} />
+            <div className="relative">
+              {/* 背景装飾 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-50 via-pink-50 to-yellow-50 rounded-xl opacity-80"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50 rounded-xl"></div>
+              
+              {/* メインコンテンツ */}
+              <div className="relative bg-white/90 backdrop-blur-sm p-8 rounded-xl border-2 border-gradient-to-r from-purple-200 to-pink-200 shadow-lg">
+                {/* 特別なヘッダー */}
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4">
+                    <span>✨</span>
+                    <span>あなただけの特別な提案</span>
+                    <span>✨</span>
+                  </div>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    おすすめサービスランキング
+                  </h2>
+                  <p className="text-gray-600 mt-2">診断結果と回答内容から厳選しました</p>
+                </div>
+                
+                <ServiceRecommendations services={recommendedServices} />
+                
+                {/* 行動促進メッセージ */}
+                <div className="text-center mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                  <p className="text-blue-800 font-medium">
+                    🎯 <strong>今がチャンス！</strong>気になるサービスがあれば、まずは詳細をチェックしてみましょう
+                  </p>
+                  <p className="text-sm text-blue-600 mt-2">
+                    小さな一歩が、大きな変化の始まりです✨
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

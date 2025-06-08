@@ -77,6 +77,63 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "missing userId" }, { status: 400 })
     }
 
+    console.log("[save-diagnosis] Processing userId:", session.userId)
+
+    /* --- 既存ユーザーチェック --- */
+    const { data: existingUser, error: checkError } = await supabaseAdmin
+      .from("career_user_diagnosis")
+      .select("user_id, current_step, updated_at")
+      .eq("user_id", session.userId)
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error("[save-diagnosis] Error checking existing user:", checkError)
+      throw checkError
+    }
+
+    if (existingUser) {
+      console.log("[save-diagnosis] Existing user found:", {
+        userId: existingUser.user_id,
+        currentStep: existingUser.current_step,
+        lastUpdated: existingUser.updated_at
+      })
+      
+      // 既存ユーザーの場合は更新のみ（重要なデータのみ）
+      const updateData = {
+        current_step: session.currentStep,
+        updated_at: new Date().toISOString(),
+        // 診断結果がある場合のみ更新
+        ...(session.simpleResult && {
+          simple_type: session.simpleResult.type,
+          simple_urgency: session.simpleResult.urgency,
+          simple_summary: session.simpleResult.summary,
+          simple_advice: session.simpleResult.advice,
+          needs_detail: session.simpleResult.needsDetailedAnalysis,
+        }),
+        ...(session.finalResult && {
+          final_type: session.finalResult.finalType,
+          final_urgency: session.finalResult.urgencyLevel,
+          final_situation: session.finalResult.currentSituation,
+          final_action1: session.finalResult.recommendedActions?.[0]?.action,
+          final_action2: session.finalResult.recommendedActions?.[1]?.action,
+          final_long_strategy: session.finalResult.longTermStrategy,
+        }),
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("career_user_diagnosis")
+        .update(updateData)
+        .eq("user_id", session.userId)
+
+      if (updateError) throw updateError
+      
+      console.log("[save-diagnosis] Existing user updated successfully")
+      return NextResponse.json({ ok: true, action: "updated" })
+    }
+
+    /* --- 新規ユーザーの場合：フル作成 --- */
+    console.log("[save-diagnosis] New user, creating full record")
+
     /* --- 追加部分: IP / Geo / Device --- */
     const ip  = getClientIp(req)
     const geo = getGeo(req)
@@ -100,10 +157,12 @@ export async function POST(req: NextRequest) {
 
     const { error } = await supabaseAdmin
       .from("career_user_diagnosis")
-      .upsert(row, { onConflict: "user_id" })   // user_id で 1 行固定
+      .insert(row)   // 新規の場合はinsert
 
     if (error) throw error
-    return NextResponse.json({ ok: true })
+    
+    console.log("[save-diagnosis] New user created successfully")
+    return NextResponse.json({ ok: true, action: "created" })
   } catch (e: any) {
     console.error("[save-diagnosis]", e)
     return NextResponse.json({ error: e.message }, { status: 500 })
