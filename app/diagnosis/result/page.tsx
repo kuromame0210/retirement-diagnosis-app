@@ -411,15 +411,15 @@ export default function ResultPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="mb-8 text-center">
-        <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 text-blue-700 rounded-full text-sm font-medium mb-4 shadow-lg">
+      <div className="mb-2 text-center">
+        {/* <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 text-blue-700 rounded-full text-sm font-medium mb-4 shadow-lg">
           <span>💡</span>
           <span className="ml-2">診断結果</span>
-        </div>
-        <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+        </div> */}
+        <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
           AIからのアドバイスをお伝えします
         </h1>
-        <p className="text-gray-600">あなたの状況に基づいたアドバイスをご提案いたします</p>
+        {/* <p className="text-gray-600 text-sm">あなたの状況に基づいたアドバイスをご提案いたします</p> */}
       </div>
 
       {/* 診断結果カード */}
@@ -447,9 +447,26 @@ export default function ResultPage() {
         </CardContent>
       </Card>
 
-      {/* 詳細診断への誘導ボタン（上部に配置） */}
+      {/* 詳細診断への誘導ボタン（診断結果の直下に配置） */}
       {result.needsDetailedAnalysis ? (
         <div className="mb-6 space-y-4">
+          {/* メインの詳細診断ボタンを最上位に */}
+          <Button 
+            onClick={() => {
+              trackEvent('continue_to_detail', { step: 3 })
+              continueToDetail()
+            }} 
+            size="lg" 
+            className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-6 px-8 text-xl shadow-2xl transform hover:scale-105 transition-all duration-200 relative overflow-hidden rounded-xl min-h-[80px]"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-700"></div>
+            <div className="relative flex items-center justify-center gap-3">
+              <span className="text-2xl">💬</span>
+              <span className="leading-tight">AIとチャットして<br className="sm:hidden" />より詳しくお聞きします</span>
+              <ArrowRight className="w-6 h-6" />
+            </div>
+          </Button>
+          
           {/* 魅力的な誘導メッセージ */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
@@ -468,37 +485,18 @@ export default function ResultPage() {
             </div>
           </div>
           
-          <div className="flex flex-col space-y-3">
-            {/* メインの詳細診断ボタン */}
-            <Button 
-              onClick={() => {
-                trackEvent('continue_to_detail', { step: 3 })
-                continueToDetail()
-              }} 
-              size="lg" 
-              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-6 px-8 text-xl shadow-2xl transform hover:scale-105 transition-all duration-200 relative overflow-hidden rounded-xl min-h-[80px]"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-700"></div>
-              <div className="relative flex items-center justify-center gap-3">
-                <span className="text-2xl">💬</span>
-                <span className="leading-tight">AIとチャットして<br className="sm:hidden" />より詳しくお聞きします</span>
-                <ArrowRight className="w-6 h-6" />
-              </div>
-            </Button>
-            
-            {/* サブボタン：スキップオプション */}
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                trackEvent('skip_to_final', { step: 3 })
-                continueToDetail()
-              }}
-              className="border-2 border-gray-300 text-gray-600 hover:bg-gray-50"
-            >
-              今回はスキップして最終結果を見る
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
+          {/* サブボタン：スキップオプション */}
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              trackEvent('skip_to_final', { step: 3 })
+              continueToDetail()
+            }}
+            className="w-full border-2 border-gray-300 text-gray-600 hover:bg-gray-50"
+          >
+            今回はスキップして最終結果を見る
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       ) : (
         <div className="flex flex-col space-y-3 mb-6">
