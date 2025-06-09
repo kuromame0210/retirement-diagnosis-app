@@ -78,10 +78,17 @@ export default function BasicDiagnosisPage() {
 
   const handleAnswerClick = (value: string) => {
     console.log("Answer clicked:", value)
+    
+    // 現在の質問情報を保存（画面遷移後も正しい値でトラッキングするため）
+    const currentQuestionId = questions[currentQuestion].id
+    const currentStep = currentQuestion + 1
+    
     const newAnswers = {
       ...answers,
-      [questions[currentQuestion].id]: value,
+      [currentQuestionId]: value,
     }
+    
+    // 1. 即座にローカル状態を更新
     setAnswers(newAnswers)
 
     const updatedSession = {
@@ -90,27 +97,57 @@ export default function BasicDiagnosisPage() {
       currentStep: 2,
     }
     setSession(updatedSession)
-    saveSession(updatedSession)
 
-    // trackEvent発火
-    trackEvent('answer_selected', { 
-      question: questions[currentQuestion].id,
-      answer: value,
-      step: currentQuestion + 1
+    // 2. 先に画面遷移を実行
+    nextQuestion()
+
+    // 3. 裏側で非同期でデータ保存とトラッキングを実行（ユーザーはブロックされない）
+    Promise.all([
+      // saveSessionを非同期で実行
+      Promise.resolve().then(() => {
+        try {
+          saveSession(updatedSession)
+          console.log("Background save completed")
+        } catch (error) {
+          console.warn("saveSession failed:", error)
+        }
+      }),
+      // trackEventを非同期で実行
+      Promise.resolve().then(() => {
+        try {
+          trackEvent('answer_selected', { 
+            question: currentQuestionId,
+            answer: value,
+            step: currentStep
+          })
+          console.log("Background tracking completed")
+        } catch (error) {
+          console.warn("trackEvent failed:", error)
+        }
+      })
+    ]).catch((error) => {
+      console.warn("Background processing failed:", error)
     })
-
-    // 少し遅延してから次の質問へ自動進行
-    setTimeout(() => {
-      nextQuestion()
-    }, 300)
   }
 
   const nextQuestion = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
     } else {
-      trackEvent('complete_basic_diagnosis', { totalQuestions: questions.length })
+      // 最後の質問でも即座に画面遷移
       router.push("/diagnosis/result")
+      
+      // トラッキングは裏側で非同期実行
+      Promise.resolve().then(() => {
+        try {
+          trackEvent('complete_basic_diagnosis', { totalQuestions: questions.length })
+          console.log("Background completion tracking completed")
+        } catch (error) {
+          console.warn("trackEvent for completion failed:", error)
+        }
+      }).catch((error) => {
+        console.warn("Background completion processing failed:", error)
+      })
     }
   }
 
@@ -122,7 +159,60 @@ export default function BasicDiagnosisPage() {
 
   const progress = ((currentQuestion + 1) / questions.length) * 100
 
-  if (!session) return <div>Loading...</div>
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <Card className="border-0 shadow-2xl">
+            <CardContent className="py-16 px-8">
+              <div className="text-center">
+                {/* メインアニメーション */}
+                <div className="relative mb-8">
+                  {/* 外側の回転リング */}
+                  <div className="w-24 h-24 mx-auto relative">
+                    <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                    <div className="absolute inset-2 border-4 border-transparent border-t-purple-500 rounded-full animate-spin animate-reverse"></div>
+                  </div>
+                  
+                  {/* 中央のアイコン */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center animate-pulse">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* タイトル */}
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    診断準備中
+                  </span>
+                </h2>
+                
+                {/* メッセージ */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                  <p className="text-gray-600 text-lg">診断を準備しています</p>
+                  <p className="text-gray-500 text-sm">もうすぐ開始できます</p>
+                </div>
+                
+                <p className="text-xs text-gray-400">
+                  ✨ ヤメドキAI退職診断
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -149,10 +239,10 @@ export default function BasicDiagnosisPage() {
                   <Button
                     key={option.value}
                     variant={isSelected ? "default" : "outline"}
-                    className={`w-full p-4 h-auto text-left justify-start transition-all duration-200 rounded-lg ${
+                    className={`w-full p-4 h-auto text-left justify-start transition-colors duration-150 rounded-lg ${
                       isSelected 
-                        ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white border-0 shadow-lg transform scale-[1.02]" 
-                        : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50 shadow-sm hover:shadow-md"
+                        ? "bg-blue-500 text-white border-0 shadow-md" 
+                        : "bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50"
                     }`}
                     onClick={() => handleAnswerClick(option.value)}
                   >
@@ -163,7 +253,7 @@ export default function BasicDiagnosisPage() {
                           : "border-gray-400"
                       }`}>
                         {isSelected && (
-                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                         )}
                       </div>
                       <span className="text-base font-medium">{option.label}</span>

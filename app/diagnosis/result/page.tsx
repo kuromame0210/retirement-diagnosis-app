@@ -23,6 +23,7 @@ export default function ResultPage() {
   const [result, setResult] = useState<SimpleResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [loadingMessage, setLoadingMessage] = useState(0)
 
   useEffect(() => {
     const sessionData = getSession()
@@ -40,9 +41,22 @@ export default function ResultPage() {
       setResult(sessionData.simpleResult)
       setLoading(false)
     } else {
-      console.log("simpleResultが存在しないため、analyzeBasicAnswersを実行")
+      console.log("simpleResultが存在しないため、即座にローカル結果を表示")
       if (sessionData?.basicAnswers) {
-        analyzeBasicAnswers(sessionData.basicAnswers)
+        // 即座にローカル結果を表示してローディングを解除
+        const localResult = {
+          type: "検討型",
+          urgency: "medium" as const,
+          summary: "基本診断が完了しました。",
+          advice: "より詳細な分析を行うことで、具体的なアドバイスを提供できます。",
+          needsDetailedAnalysis: true
+        }
+        
+        setResult(localResult)
+        setLoading(false)
+        
+        // API分析は裏側で非同期実行
+        analyzeBasicAnswersInBackground(sessionData.basicAnswers)
       } else {
         console.error("❌ basicAnswersも存在しません")
         setError("基本診断データが見つかりません。最初からやり直してください。")
@@ -51,6 +65,61 @@ export default function ResultPage() {
     }
   }, [])
 
+  // ローディングメッセージを動的に変更
+  useEffect(() => {
+    if (!loading) return
+
+    const messages = [
+      "あなたの回答を分析しています",
+      "キャリアパターンを解析中",
+      "最適なアドバイスを準備中",
+      "AI分析がもうすぐ完了します"
+    ]
+
+    const interval = setInterval(() => {
+      setLoadingMessage((prev) => (prev + 1) % messages.length)
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [loading])
+
+  // バックグラウンドでAPI分析を実行する関数
+  const analyzeBasicAnswersInBackground = async (answers: Record<string, string>) => {
+    try {
+      console.log("=== バックグラウンドでAPI分析開始 ===")
+      console.log("分析対象のanswers:", answers)
+
+      const response = await fetch("/api/analyze-basic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("API分析成功:", data)
+        
+        // API結果で更新
+        setResult(data.result)
+        
+        // セッションにも保存
+        const updatedSession = {
+          ...session,
+          basicAnswers: answers,
+          simpleResult: data.result,
+        }
+        
+        saveSession(updatedSession)
+        setSession(updatedSession)
+        
+        console.log("バックグラウンド分析完了、結果を更新しました")
+      } else {
+        console.warn("API分析失敗 - ローカル結果のまま継続")
+      }
+    } catch (error) {
+      console.warn("バックグラウンドAPI分析でエラー:", error)
+    }
+  }
 
   const analyzeBasicAnswers = async (answers: Record<string, string>) => {
     try {
@@ -180,15 +249,62 @@ export default function ResultPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-              <p>診断結果を分析中...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <Card className="border-0 shadow-2xl">
+            <CardContent className="py-16 px-8">
+              <div className="text-center">
+                {/* メインアニメーション */}
+                <div className="relative mb-8">
+                  {/* 外側の回転リング */}
+                  <div className="w-24 h-24 mx-auto relative">
+                    <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                    <div className="absolute inset-2 border-4 border-transparent border-t-purple-500 rounded-full animate-spin animate-reverse"></div>
+                  </div>
+                  
+                  {/* 中央のアイコン */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center animate-pulse">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* タイトル */}
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    AI分析中
+                  </span>
+                </h2>
+                
+                {/* 動的メッセージ */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                  <p className="text-gray-600 text-lg transition-all duration-500">
+                    {["あなたの回答を分析しています", "キャリアパターンを解析中", "最適なアドバイスを準備中", "AI分析がもうすぐ完了します"][loadingMessage]}
+                  </p>
+                  <p className="text-gray-500 text-sm">高精度な分析でより良い結果をお届けします</p>
+                </div>
+
+                {/* プログレスバー風装飾 */}
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
+                </div>
+                
+                <p className="text-xs text-gray-400">
+                  ✨ Claude 3.5 Sonnetによる高精度分析
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }

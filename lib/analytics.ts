@@ -25,14 +25,14 @@ export const trackEvent = (
         clearTimeout(syncDebounceTimer)
       }
 
-      // 500ms後に同期実行（高頻度クリックを防ぐ）
+      // 100ms後に同期実行（高頻度クリックを防ぐ）
       syncDebounceTimer = setTimeout(() => {
         syncSessionToServer()
           .catch((e) => console.warn("syncSessionToServer failed", e))
           .finally(() => {
             syncDebounceTimer = null
           })
-      }, 500)
+      }, 100)
 
     } catch (e) {
       console.warn("trackEvent: getSession failed", e)

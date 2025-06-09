@@ -57,3 +57,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* カスタムアニメーション */
+@layer utilities {
+  .animate-reverse {
+    animation-direction: reverse;
+  }
+  
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+  
+  .animate-pulse-fast {
+    animation: pulse 1s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+}
