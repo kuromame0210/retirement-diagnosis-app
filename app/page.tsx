@@ -10,12 +10,22 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">退職診断</h1>
+      <div className="text-center" style={{ margin:" 2rem 0;" }}>
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">ヤメドキAI退職診断</h1>
         <p className="text-xl text-gray-600 mb-8">あなたに最適な働き方を見つける</p>
-        <p className="text-gray-500 max-w-2xl mx-auto">
+        <p className="text-gray-500 max-w-2xl mx-auto mb-8">
           AI診断で現在の状況を整理し、最適な行動を提案します。無料で匿名利用可能。
         </p>
+        <Link href="/diagnosis/basic">
+          <Button size="lg" className="text-lg mb-4" style={{ padding: "1.5rem 2rem" }}
+          onClick={() => {
+            console.log("HomePage: Start diagnosis button clicked (hero)")
+            trackEvent('start_diagnosis', { step: 1, location: 'hero' })
+          }}
+          >
+            今すぐ診断を開始する
+          </Button>
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
