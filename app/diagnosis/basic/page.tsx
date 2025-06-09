@@ -125,85 +125,93 @@ export default function BasicDiagnosisPage() {
   if (!session) return <div>Loading...</div>
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">基本診断</h1>
-          <span className="text-sm text-gray-500">
-            {currentQuestion + 1} / {questions.length}
-          </span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">基本診断</h1>
+            <span className="text-sm text-gray-600">
+              {currentQuestion + 1} / {questions.length}
+            </span>
+          </div>
+          <Progress value={progress} className="w-full" />
         </div>
-        <Progress value={progress} className="w-full" />
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{questions[currentQuestion].question}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {questions[currentQuestion].options.map((option) => {
-              const isSelected = answers[questions[currentQuestion].id] === option.value
-              return (
-                <Button
-                  key={option.value}
-                  variant={isSelected ? "default" : "outline"}
-                  className={`w-full p-4 h-auto text-left justify-start transition-all duration-200 ${
-                    isSelected 
-                      ? "bg-blue-600 text-white border-blue-600 shadow-md" 
-                      : "bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50"
-                  }`}
-                  onClick={() => handleAnswerClick(option.value)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+        <Card className="shadow-xl border-0">
+          <CardHeader>
+            <CardTitle className="text-lg text-gray-900">{questions[currentQuestion].question}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {questions[currentQuestion].options.map((option) => {
+                const isSelected = answers[questions[currentQuestion].id] === option.value
+                return (
+                  <Button
+                    key={option.value}
+                    variant={isSelected ? "default" : "outline"}
+                    className={`w-full p-4 h-auto text-left justify-start transition-all duration-200 rounded-lg ${
                       isSelected 
-                        ? "border-white bg-white" 
-                        : "border-gray-400"
-                    }`}>
-                      {isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                      )}
+                        ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white border-0 shadow-lg transform scale-[1.02]" 
+                        : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50 shadow-sm hover:shadow-md"
+                    }`}
+                    onClick={() => handleAnswerClick(option.value)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        isSelected 
+                          ? "border-white bg-white" 
+                          : "border-gray-400"
+                      }`}>
+                        {isSelected && (
+                          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                        )}
+                      </div>
+                      <span className="text-base font-medium">{option.label}</span>
                     </div>
-                    <span className="text-base">{option.label}</span>
-                  </div>
-                </Button>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                  </Button>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={
-          () => {
-            trackEvent('prev_question', { step: currentQuestion })
-            prevQuestion()
-          }
-        } disabled={currentQuestion === 0}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          前の質問
-        </Button>
-
-        {/* 回答済みの場合のみ次の質問ボタンを表示 */}
-        {answers[questions[currentQuestion].id] && (
+        <div className="flex justify-between mt-8">
           <Button 
-            onClick={() => {
-              trackEvent('skip_to_next', { step: currentQuestion })
-              nextQuestion()
-            }}
+            variant="outline" 
+            className="px-6 py-3 rounded-lg border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+            onClick={
+              () => {
+                trackEvent('prev_question', { step: currentQuestion })
+                prevQuestion()
+              }
+            } 
+            disabled={currentQuestion === 0}
           >
-            {currentQuestion === questions.length - 1 ? "結果を見る" : "次の質問"}
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            前の質問
           </Button>
-        )}
 
-        {/* 未回答の場合は選択を促すメッセージ */}
-        {!answers[questions[currentQuestion].id] && (
-          <div className="text-sm text-gray-500 flex items-center">
-            選択肢をクリックすると自動で次に進みます
-          </div>
-        )}
+          {/* 回答済みの場合のみ次の質問ボタンを表示 */}
+          {answers[questions[currentQuestion].id] && (
+            <Button 
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white border-0 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              onClick={() => {
+                trackEvent('skip_to_next', { step: currentQuestion })
+                nextQuestion()
+              }}
+            >
+              {currentQuestion === questions.length - 1 ? "結果を見る" : "次の質問"}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
+
+          {/* 未回答の場合は選択を促すメッセージ */}
+          {!answers[questions[currentQuestion].id] && (
+            <div className="text-sm text-gray-600 flex items-center">
+              選択肢をクリックすると自動で次に進みます
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
