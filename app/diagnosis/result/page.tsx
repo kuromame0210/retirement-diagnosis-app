@@ -451,16 +451,17 @@ export default function ResultPage() {
       {result.needsDetailedAnalysis ? (
         <div className="mb-6 space-y-4">
           {/* 魅力的な誘導メッセージ */}
-          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg p-4 text-center">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-2xl">⚡</span>
-              <span className="font-bold text-yellow-800">ここで終わるのはもったいない！</span>
-              <span className="text-2xl">⚡</span>
+              <span className="text-2xl">💬</span>
+              <span className="font-bold text-blue-800">チャット形式で悩み相談するために</span>
+              <span className="text-2xl">💬</span>
             </div>
-            <p className="text-yellow-700 text-sm mb-3">
-              簡易診断では見えない<strong>あなただけの隠れた本音</strong>を、AIが引き出します
+            <p className="text-blue-700 text-sm mb-3">
+              <strong>詳細にあなたのことを聞かせてくれませんか？</strong><br />
+              AIがより具体的で実践的なアドバイスをお伝えできます
             </p>
-            <div className="flex items-center justify-center gap-4 text-xs text-yellow-600">
+            <div className="flex items-center justify-center gap-4 text-xs text-blue-600">
               <span>✨ 具体的な行動プラン</span>
               <span>🎯 個別最適化アドバイス</span>
               <span>💪 背中を押してくれる言葉</span>
