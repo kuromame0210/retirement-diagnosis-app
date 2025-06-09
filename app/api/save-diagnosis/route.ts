@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase"
 import { UAParser } from "ua-parser-js"
 
+// 日本時間（JST）のタイムスタンプを取得する関数
+const getJSTTimestamp = (): string => {
+  // PostgreSQLのtimestamptz型は自動的にUTCで保存されるため
+  // データベース側でタイムゾーン変換を行う
+  return new Date().toISOString()
+}
+
+// Supabase/PostgreSQL用のJST変換SQL関数
+const getJSTTimestampSQL = () => {
+  return `timezone('Asia/Tokyo', now())`
+}
+
 /* ───────── ① 追加：IP & Geo を取得 ───────── */
 function getClientIp(req: NextRequest) {
   const fwd = req.headers.get("x-forwarded-for")
@@ -78,6 +90,20 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("[save-diagnosis] Processing userId:", session.userId)
+    console.log("[save-diagnosis] Session timestamps:", {
+      startedAt: session.startedAt,
+      updatedAt: session.updatedAt,
+      completedAt: session.completedAt
+    })
+    
+    // デバッグ：現在時刻との比較
+    const now = new Date()
+    const sessionStarted = new Date(session.startedAt)
+    console.log("[save-diagnosis] Time comparison:", {
+      serverNow: now.toISOString(),
+      sessionStarted: sessionStarted.toISOString(),
+      timeDiffHours: (now.getTime() - sessionStarted.getTime()) / (1000 * 60 * 60)
+    })
 
     /* --- 既存ユーザーチェック --- */
     const { data: existingUser, error: checkError } = await supabaseAdmin
@@ -101,7 +127,7 @@ export async function POST(req: NextRequest) {
       // 既存ユーザーの場合は更新のみ（重要なデータのみ）
       const updateData = {
         current_step: session.currentStep,
-        updated_at: new Date().toISOString(),
+        updated_at: session.updatedAt, // セッションのタイムスタンプをそのまま使用
         // 診断結果がある場合のみ更新
         ...(session.simpleResult && {
           simple_type: session.simpleResult.type,
@@ -153,6 +179,10 @@ export async function POST(req: NextRequest) {
       device_type:    device.type ?? "desktop",
       device_os:      os.name    ?? null,
       device_browser: browser.name ?? null,
+      
+      // セッションのタイムスタンプをそのまま使用（ローカルストレージと同じ）
+      created_at: session.startedAt,
+      updated_at: session.updatedAt,
     }
 
     const { error } = await supabaseAdmin

@@ -62,9 +62,9 @@ export function addClickedService(service: {
     const nextClicked = 
       session?.clickedServices ? [
         ...(session?.clickedServices ),
-        { ...service, clickedAt: new Date().toISOString() },
+        { ...service, clickedAt: getJSTTimestamp() },
       ] : [
-        { ...service, clickedAt: new Date().toISOString() },
+        { ...service, clickedAt: getJSTTimestamp() },
       ]
     console.log("nextClicked",{nextClicked})
 
@@ -78,6 +78,15 @@ export function addClickedService(service: {
   }
 }
 
+// 日本時間（JST）のタイムスタンプを取得する関数
+export const getJSTTimestamp = (): string => {
+  const now = new Date()
+  // 日本時間（UTC+9）に変換
+  const jstOffset = 9 * 60 * 60 * 1000 // 9時間をミリ秒に変換
+  const jstDate = new Date(now.getTime() + jstOffset)
+  return jstDate.toISOString()
+}
+
 /* --- 2. saveSession を簡潔に -------------------- */
 export const saveSession = (patch: Partial<DiagnosisSession>) => {
   if (typeof window === 'undefined') return
@@ -86,7 +95,7 @@ export const saveSession = (patch: Partial<DiagnosisSession>) => {
   const updated = {
     ...current,
     ...patch,
-    updatedAt: new Date().toISOString(),
+    updatedAt: getJSTTimestamp(),
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
   // syncSessionToServer(updated).catch(console.warn)
@@ -142,8 +151,8 @@ const createNewSession = (): DiagnosisSession => ({
   simpleResult: null,
   finalResult: null,
   clickedServices: [],
-  startedAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
+  startedAt: getJSTTimestamp(),
+  updatedAt: getJSTTimestamp(),
 })
 
 /* サーバーへ非同期同期  ------------------------------ */
