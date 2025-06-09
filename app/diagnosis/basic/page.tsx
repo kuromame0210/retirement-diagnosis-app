@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, ArrowRight } from "lucide-react"
+import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
 import { saveSession, getSession } from "@/lib/storage"
 import { trackEvent } from "@/lib/analytics"
 
@@ -204,7 +204,7 @@ export default function BasicDiagnosisPage() {
                 </div>
                 
                 <p className="text-xs text-gray-400">
-                  ✨ ヤメドキAI退職診断
+                  🔮 ヤメドキAI退職診断
                 </p>
               </div>
             </CardContent>
@@ -218,13 +218,17 @@ export default function BasicDiagnosisPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">基本診断</h1>
-            <span className="text-sm text-gray-600">
-              {currentQuestion + 1} / {questions.length}
-            </span>
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 text-purple-700 rounded-full text-sm font-medium mb-4 shadow-lg">
+              <Sparkles className="w-4 h-4 mr-2" />
+              質問 {currentQuestion + 1} / {questions.length}
+            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              あなたのお話をお聞かせください
+            </h1>
+            <p className="text-gray-600 mt-2">正直にお答えください。AIがあなたに最適なアドバイスをします</p>
           </div>
-          <Progress value={progress} className="w-full" />
+          <Progress value={progress} className="w-full bg-gradient-to-r from-purple-200 to-pink-200" />
         </div>
 
         <Card className="shadow-xl border-0">

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, ArrowRight, AlertTriangle, CheckCircle, Clock } from "lucide-react"
-import { getSession, saveSession } from "@/lib/storage"
+import { getSession, saveSession, getJSTTimestamp } from "@/lib/storage"
 import { trackEvent } from "@/lib/analytics"
 
 interface SimpleResult {
@@ -15,6 +15,88 @@ interface SimpleResult {
   summary: string
   advice: string
   needsDetailedAnalysis: boolean
+}
+
+// 基本回答から簡易分析を生成する関数
+const generateLocalAnalysis = (basicAnswers: Record<string, string>): SimpleResult => {
+  console.log("ローカル分析を生成中:", basicAnswers)
+  
+  // 実際の質問項目に基づいた分析ロジック
+  const q1 = basicAnswers.q1 // 今の仕事について
+  const q2 = basicAnswers.q2 // 気持ちになった時期
+  const q3 = basicAnswers.q3 // 仕事が頭から離れない頻度
+  const q4 = basicAnswers.q4 // 一番のストレス要因
+  const q5 = basicAnswers.q5 // 退職を考える理由
+  
+  let type = "検討型"
+  let urgency: "high" | "medium" | "low" = "medium"
+  let summary = ""
+  let advice = ""
+  
+  // Q1: 今の仕事についての気持ちによる分析
+  if (q1 === "quit") {
+    type = "転職検討型"
+    urgency = "high"
+    summary = "現在のお仕事を辞めたいという気持ちをお持ちですね。"
+  } else if (q1 === "continue") {
+    type = "現状維持型"
+    urgency = "low"
+    summary = "基本的には今のお仕事を続けたいとお考えですね。"
+  } else if (q1 === "unsure") {
+    type = "迷い型"
+    urgency = "medium"
+    summary = "今のお仕事について迷いを感じていらっしゃる状況ですね。"
+  } else if (q1 === "never_thought") {
+    type = "安定型"
+    urgency = "low"
+    summary = "これまで転職について深く考えたことがなかったようですね。"
+  }
+  
+  // Q2: 気持ちになった時期による緊急度調整
+  if (q2 === "recent") {
+    summary += "最近になってその気持ちが強くなってきたということですね。"
+  } else if (q2 === "half_year") {
+    summary += "半年以上そのような気持ちが続いているということは、根深い問題があるかもしれません。"
+    if (urgency === "low") urgency = "medium"
+  } else if (q2 === "long_ago" || q2 === "always") {
+    summary += "長期間にわたってそのような気持ちを抱えていらっしゃるのですね。"
+    if (urgency === "low") urgency = "medium"
+    if (urgency === "medium") urgency = "high"
+  }
+  
+  // Q3: 仕事が頭から離れない頻度による分析
+  if (q3 === "daily") {
+    summary += "仕事のことが頭から離れない状況が続いているようで、かなりのストレスを感じていらっしゃることがうかがえます。"
+    urgency = "high"
+  } else if (q3 === "few_times_week") {
+    summary += "週に数回は仕事のことが気になってしまう状況ですね。"
+    if (urgency === "low") urgency = "medium"
+  } else if (q3 === "sometimes") {
+    summary += "たまに仕事のことが気になることがある程度で、比較的バランスが取れているようですね。"
+  } else if (q3 === "rarely") {
+    summary += "プライベートと仕事の境界をしっかり保てているようですね。"
+  }
+  
+  // Q4: ストレス要因によるアドバイス
+  if (q4 === "relationships") {
+    advice = "人間関係のストレスは職場環境に大きく影響します。コミュニケーションの改善やチーム変更の可能性を検討し、難しい場合は環境を変えることも有効な解決策です。"
+  } else if (q4 === "workload") {
+    advice = "業務量や労働時間の問題は健康に直結します。効率化や業務分担の見直し、必要に応じて上司への相談を行い、改善が見込めない場合は転職を検討することをお勧めします。"
+  } else if (q4 === "content") {
+    advice = "仕事内容ややりがいの問題は長期的なモチベーションに関わります。現在の職場での業務拡大や、より興味のある分野への転職を検討してみましょう。"
+  } else if (q4 === "future") {
+    advice = "将来への不安は多くの方が抱える悩みです。キャリアプランの明確化や、成長できる環境への転職を通じて、より明るい未来を築いていくことができます。"
+  } else {
+    advice = "複数の要因が絡み合った複雑な状況のようですね。一つずつ整理して優先順位をつけることで、最適な解決策が見えてくるでしょう。"
+  }
+  
+  return {
+    type,
+    urgency,
+    summary,
+    advice,
+    needsDetailedAnalysis: true
+  }
 }
 
 export default function ResultPage() {
@@ -37,31 +119,26 @@ export default function ResultPage() {
 
     setSession(sessionData)
 
-    if (sessionData.simpleResult) {
+    if (sessionData?.simpleResult) {
+      // 既存の分析結果がある場合
+      console.log("既存のsimpleResultを使用")
       setResult(sessionData.simpleResult)
       setLoading(false)
+    } else if (sessionData?.basicAnswers && Object.keys(sessionData.basicAnswers).length > 0) {
+      // 基本回答があるが分析結果がない場合：ローカル分析を実行
+      console.log("simpleResultが存在しないため、ローカル分析を実行")
+      const localResult = generateLocalAnalysis(sessionData.basicAnswers)
+      
+      // 安定した表示のため、一度設定したら変更しない
+      setResult(localResult)
+      setLoading(false)
+      
+      // API分析は裏側で非同期実行（画面更新はしない）
+      analyzeBasicAnswersInBackground(sessionData.basicAnswers)
     } else {
-      console.log("simpleResultが存在しないため、即座にローカル結果を表示")
-      if (sessionData?.basicAnswers) {
-        // 即座にローカル結果を表示してローディングを解除
-        const localResult = {
-          type: "検討型",
-          urgency: "medium" as const,
-          summary: "基本診断が完了しました。",
-          advice: "より詳細な分析を行うことで、具体的なアドバイスを提供できます。",
-          needsDetailedAnalysis: true
-        }
-        
-        setResult(localResult)
-        setLoading(false)
-        
-        // API分析は裏側で非同期実行
-        analyzeBasicAnswersInBackground(sessionData.basicAnswers)
-      } else {
-        console.error("❌ basicAnswersも存在しません")
-        setError("基本診断データが見つかりません。最初からやり直してください。")
-        setLoading(false)
-      }
+      console.error("❌ basicAnswersが存在しません")
+      setError("基本診断データが見つかりません。最初からやり直してください。")
+      setLoading(false)
     }
   }, [])
 
@@ -83,7 +160,7 @@ export default function ResultPage() {
     return () => clearInterval(interval)
   }, [loading])
 
-  // バックグラウンドでAPI分析を実行する関数
+  // バックグラウンドでAPI分析を実行する関数（画面更新なし）
   const analyzeBasicAnswersInBackground = async (answers: Record<string, string>) => {
     try {
       console.log("=== バックグラウンドでAPI分析開始 ===")
@@ -99,10 +176,7 @@ export default function ResultPage() {
         const data = await response.json()
         console.log("API分析成功:", data)
         
-        // API結果で更新
-        setResult(data.result)
-        
-        // セッションにも保存
+        // セッションにのみ保存（画面は更新しない）
         const updatedSession = {
           ...session,
           basicAnswers: answers,
@@ -112,7 +186,7 @@ export default function ResultPage() {
         saveSession(updatedSession)
         setSession(updatedSession)
         
-        console.log("バックグラウンド分析完了、結果を更新しました")
+        console.log("バックグラウンド分析完了、セッションに保存しました（画面更新なし）")
       } else {
         console.warn("API分析失敗 - ローカル結果のまま継続")
       }
@@ -152,7 +226,7 @@ export default function ResultPage() {
           basicAnswers: answers, // ✅ 明示的に保持
           simpleResult: localResult,
           currentStep: 3,
-          updatedAt: new Date().toISOString()
+          // updatedAtはsaveSession内で自動設定
         }
 
         setSession(updatedSession)
@@ -170,7 +244,7 @@ export default function ResultPage() {
         basicAnswers: answers, // ✅ 明示的に保持
         simpleResult: analysisResult,
         currentStep: 3,
-        updatedAt: new Date().toISOString()
+        // updatedAtはsaveSession内で自動設定
       }
 
       console.log("API分析後の保存セッション:", updatedSession)
@@ -224,7 +298,7 @@ export default function ResultPage() {
       basicAnswers: session?.basicAnswers, // 明示的にbasicAnswersを保持
       simpleResult: result, // 分析結果を保存
       currentStep: 3,
-      updatedAt: new Date().toISOString()
+      // updatedAtはsaveSession内で自動設定されるので削除
     }
 
     console.log("保存するセッション:", updatedSession)
@@ -247,6 +321,7 @@ export default function ResultPage() {
   }
 
 
+  // ローディング状態の表示
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
@@ -323,60 +398,187 @@ export default function ResultPage() {
     )
   }
 
+  // 結果が存在しない場合の表示
+  if (!result) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="text-center py-12">
+          <p className="text-gray-600">結果を準備中です...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">簡易診断結果</h1>
-        <p className="text-gray-600">基本的な分析結果をお示しします</p>
+      <div className="mb-8 text-center">
+        <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 text-blue-700 rounded-full text-sm font-medium mb-4 shadow-lg">
+          <span>💡</span>
+          <span className="ml-2">診断結果</span>
+        </div>
+        <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+          AIからのアドバイスをお伝えします
+        </h1>
+        <p className="text-gray-600">あなたの状況に基づいたアドバイスをご提案いたします</p>
       </div>
 
-      {result && (
-        <>
-          <Card className="mb-6">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{result.type}</CardTitle>
-                <div className="flex items-center space-x-2">
-                  {getUrgencyIcon(result.urgency)}
-                  <span className="text-sm font-medium">{getUrgencyText(result.urgency)}</span>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">現在の状況</h3>
-                  <p className="text-gray-700">{result.summary}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">基本的なアドバイス</h3>
-                  <p className="text-gray-700">{result.advice}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* 診断結果カード */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>{result.type}</CardTitle>
+            <div className="flex items-center space-x-2">
+              {getUrgencyIcon(result.urgency)}
+              <span className="text-sm font-medium">{getUrgencyText(result.urgency)}</span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold mb-2">現在の状況</h3>
+              <p className="text-gray-700">{result.summary}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">基本的なアドバイス</h3>
+              <p className="text-gray-700">{result.advice}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-          {result.needsDetailedAnalysis && (
-            <Alert className="mb-6">
-              <AlertDescription>
-                より詳細な分析のため、追加の質問にお答えいただくことをお勧めします。
-                より具体的で個別化されたアドバイスを提供できます。
-              </AlertDescription>
-            </Alert>
-          )}
-
+      {/* 詳細診断への誘導ボタン（上部に配置） */}
+      {result.needsDetailedAnalysis ? (
+        <div className="mb-6 space-y-4">
+          {/* 魅力的な誘導メッセージ */}
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-2xl">⚡</span>
+              <span className="font-bold text-yellow-800">ここで終わるのはもったいない！</span>
+              <span className="text-2xl">⚡</span>
+            </div>
+            <p className="text-yellow-700 text-sm mb-3">
+              簡易診断では見えない<strong>あなただけの隠れた本音</strong>を、AIが引き出します
+            </p>
+            <div className="flex items-center justify-center gap-4 text-xs text-yellow-600">
+              <span>✨ 具体的な行動プラン</span>
+              <span>🎯 個別最適化アドバイス</span>
+              <span>💪 背中を押してくれる言葉</span>
+            </div>
+          </div>
+          
           <div className="flex flex-col space-y-3">
-            <Button onClick={
-              () => {
+            {/* メインの詳細診断ボタン */}
+            <Button 
+              onClick={() => {
                 trackEvent('continue_to_detail', { step: 3 })
                 continueToDetail()
-              }
-            } size="lg">
-              {result.needsDetailedAnalysis ? "詳細診断に進む" : "最終結果を見る"}
+              }} 
+              size="lg" 
+              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-6 px-8 text-xl shadow-2xl transform hover:scale-105 transition-all duration-200 relative overflow-hidden rounded-xl min-h-[80px]"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-700"></div>
+              <div className="relative flex items-center justify-center gap-3">
+                <span className="text-2xl">💬</span>
+                <span className="leading-tight">AIとチャットして<br className="sm:hidden" />より詳しくお聞きします</span>
+                <ArrowRight className="w-6 h-6" />
+              </div>
+            </Button>
+            
+            {/* サブボタン：スキップオプション */}
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                trackEvent('skip_to_final', { step: 3 })
+                continueToDetail()
+              }}
+              className="border-2 border-gray-300 text-gray-600 hover:bg-gray-50"
+            >
+              今回はスキップして最終結果を見る
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
-        </>
+        </div>
+      ) : (
+        <div className="flex flex-col space-y-3 mb-6">
+          <Button onClick={
+            () => {
+              trackEvent('continue_to_final', { step: 3 })
+              continueToDetail()
+            }
+          } size="lg">
+            最終結果を見る
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      )}
+
+      {/* 詳細診断のメリット訴求カード（ボタンの下に配置） */}
+      {result.needsDetailedAnalysis && (
+        <div className="mb-6 space-y-4">
+          <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-blue-50 shadow-lg">
+            <CardContent className="p-6">
+              <div className="text-center mb-4">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-3">
+                  <span>🚀</span>
+                  <span>さらに詳しくお話をお聞きできます！</span>
+                  <span>✨</span>
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-bold text-center mb-4 text-green-800">
+                AIとのチャットで、あなたの状況をより詳しくお聞かせください
+              </h3>
+              
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-white/80 p-4 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">💬</span>
+                    <span className="font-semibold text-green-800">AIとの対話</span>
+                  </div>
+                  <p className="text-sm text-gray-700">Claude 3.5 Sonnetとリアルタイムで相談できます</p>
+                </div>
+                
+                <div className="bg-white/80 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🎯</span>
+                    <span className="font-semibold text-blue-800">個別アドバイス</span>
+                  </div>
+                  <p className="text-sm text-gray-700">あなたの状況に合わせたピンポイントな提案</p>
+                </div>
+                
+                <div className="bg-white/80 p-4 rounded-lg border border-purple-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">⏰</span>
+                    <span className="font-semibold text-purple-800">たった3分</span>
+                  </div>
+                  <p className="text-sm text-gray-700">短時間で深い洞察が得られます</p>
+                </div>
+                
+                <div className="bg-white/80 p-4 rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🔒</span>
+                    <span className="font-semibold text-orange-800">完全匿名</span>
+                  </div>
+                  <p className="text-sm text-gray-700">安心してお悩みをお話しください</p>
+                </div>
+              </div>
+              
+              <div className="text-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                <p className="text-yellow-800 font-medium text-sm">
+                  💡 <strong>多くの方が「話すことで気持ちが整理できた」と回答しています</strong>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* 補足説明 */}
+          <Alert className="border-blue-200 bg-blue-50">
+            <AlertDescription className="text-blue-800">
+              <strong>💡 今のままでもアドバイスはお伝えできますが</strong>、詳細相談でさらに具体的なご提案ができます。
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
     </div>
   )

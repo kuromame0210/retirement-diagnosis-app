@@ -39,14 +39,70 @@ export default function DetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">詳細入力</h1>
-        <p className="text-gray-600">より詳細な分析のため、現在の状況や気持ちを自由にお書きください（任意）</p>
+      {/* 魅力的なヘッダー */}
+      <div className="mb-8 text-center">
+        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4">
+          <span>💬</span>
+          <span>AI詳細診断</span>
+          <span>✨</span>
+        </div>
+        <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          あなたの気持ちを聞かせてください
+        </h1>
+        <p className="text-gray-600 text-lg leading-relaxed">
+          まずは現在の状況を簡単に入力してから、<br />
+          <strong className="text-blue-600">AIとのリアルタイムチャット</strong>で深く掘り下げていきます
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>現在の状況について詳しく教えてください</CardTitle>
+      {/* メリット紹介カード */}
+      <Card className="mb-6 border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-bold text-center mb-4 text-blue-800">
+            🎯 このステップで得られること
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🤝</span>
+              <div>
+                <p className="font-medium text-blue-700">個別対話</p>
+                <p className="text-sm text-gray-600">あなただけの状況に合わせた質問</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">💡</span>
+              <div>
+                <p className="font-medium text-purple-700">新しい気づき</p>
+                <p className="text-sm text-gray-600">自分では気づかなかった視点</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🎯</span>
+              <div>
+                <p className="font-medium text-green-700">具体的提案</p>
+                <p className="text-sm text-gray-600">実行しやすいアクションプラン</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚡</span>
+              <div>
+                <p className="font-medium text-orange-700">スピーディー</p>
+                <p className="text-sm text-gray-600">3-5分で完了</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
+          <CardTitle className="text-blue-800 flex items-center gap-2">
+            <span>📝</span>
+            まずは現在の状況を簡単に教えてください
+          </CardTitle>
+          <p className="text-sm text-gray-600 mt-2">
+            この後のAIチャットでより詳しくお聞きします。まずは思いつくことを自由にどうぞ✨
+          </p>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -74,23 +130,38 @@ export default function DetailPage() {
       </Card>
 
       <div className="flex flex-col space-y-3 mt-8">
-        <Button onClick={
-          () => {
+        {/* メインボタン：AI問答 */}
+        <Button 
+          onClick={() => {
             trackEvent('submit_answer', { step: 3 })
             handleSubmit()
-          }
-        } size="lg" disabled={textInput.trim().length < 10}>
-          AI問答に進む
-          <ArrowRight className="w-4 h-4 ml-2" />
+          }} 
+          size="lg" 
+          disabled={textInput.trim().length < 10}
+          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-4 text-lg shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+        >
+          <span className="mr-2">🚀</span>
+          {textInput.trim().length < 10 ? "10文字以上入力してAIチャットを開始" : "AIとのチャットを開始する"}
+          <ArrowRight className="w-5 h-5 ml-2" />
         </Button>
 
-        <Button variant="outline" onClick={
-          () => {
+        {/* プログレスヒント */}
+        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-blue-700 text-sm font-medium">
+            💬 次のステップ：AIが3〜5つの質問をして、あなたの状況を深く理解します
+          </p>
+        </div>
+
+        {/* スキップボタン */}
+        <Button 
+          variant="outline" 
+          onClick={() => {
             trackEvent('skip_detail', { step: 3 })
             skipDetail()
-          }
-        }>
-          入力をスキップして最終結果を見る
+          }}
+          className="border-2 border-gray-300 text-gray-600 hover:bg-gray-50"
+        >
+          今回はスキップして最終結果を見る
         </Button>
 
         <Button variant="ghost" onClick={

@@ -15,12 +15,12 @@ export default function HomePage() {
       <div className="container mx-auto px-4 pt-20 pb-12 max-w-6xl relative z-10">
         <div className="text-center mb-16">
           <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 text-blue-700 rounded-full text-sm font-medium mb-8 shadow-lg">
-            <Brain className="w-4 h-4 mr-2" />
-            AIがあなたのキャリアをサポート
+            <Sparkles className="w-4 h-4 mr-2" />
+            AIがあなたの状況をお聞きしてアドバイスします
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-gray-900 mb-8 leading-tight tracking-tight">
             <span className="block mb-2">
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
                 ヤメドキ
               </span>
             </span>
@@ -28,10 +28,10 @@ export default function HomePage() {
               AI退職診断
             </span>
           </h1>
-          <p className="text-xl md:text-2xl text-gray-700 mb-6 font-light">あなたに最適な働き方を見つける</p>
+          <p className="text-xl md:text-2xl text-gray-700 mb-6 font-light">あなたのことを聞かせてください</p>
           <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed px-4">
-            Claude 3.5 Sonnetを使ったAI診断で現在の状況を整理し、最適な行動を提案します。<br />
-            無料・匿名で安心してご利用いただけます。
+            あなたの状況をお聞かせください。<br />
+            Claude 3.5 Sonnetがあなたに最適なアドバイスをご提案させていただきます。
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-lg mx-auto mb-8">
             <Link href="/diagnosis/basic" className="w-full sm:w-auto">
@@ -45,8 +45,8 @@ export default function HomePage() {
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-700"></div>
                 <div className="relative flex items-center justify-center">
-                  <Brain className="w-5 h-5 mr-2" />
-                  <span className="hidden sm:inline">今すぐ無料で診断を始める</span>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  <span className="hidden sm:inline">今すぐ無料で診断開始</span>
                   <span className="sm:hidden">無料で診断開始</span>
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </div>
