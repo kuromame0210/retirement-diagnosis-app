@@ -15,38 +15,36 @@ export default function V2HomePage() {
         <div className="text-center mb-8 sm:mb-16">
           <div className="inline-flex items-center px-3 sm:px-4 py-2 bg-gradient-to-r from-green-100 to-blue-100 border border-green-200 text-green-700 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-8 shadow-lg">
             <Sparkles className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
-            選択肢のみで5分完了！新バージョン
+            3分で完了
           </div>
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight px-2">
-            <span className="block mb-1 sm:mb-2">
-              <span className="bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                ヤメドキ
-              </span>
+            <span className="bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+              ヤメドキ
             </span>
-            <span className="block text-2xl sm:text-4xl md:text-5xl font-bold text-gray-800">
+            <span className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-800">
               AI退職診断
             </span>
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mb-4 sm:mb-6 font-light">選択肢のみで、もっと簡単に</p>
+          
           <p className="text-xs sm:text-sm md:text-base text-gray-600 max-w-3xl mx-auto mb-8 sm:mb-12 leading-relaxed px-4">
             10個の質問に答えるだけで、AIがあなたの状況を分析し、<br className="hidden sm:block" />
-            最適なサービス5選をご提案します。
+            あなたに最適な行動をご提案します。
           </p>
           <div className="flex flex-col gap-3 sm:gap-4 justify-center items-center max-w-sm sm:max-w-lg mx-auto mb-6 sm:mb-8 px-4">
             <Link href="/v2/diagnosis" className="w-full">
               <Button 
                 size="lg" 
-                className="w-full text-sm sm:text-lg font-bold px-6 sm:px-8 py-3 sm:py-4 h-auto bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 hover:from-green-600 hover:via-blue-600 hover:to-purple-600 text-white border-0 rounded-lg relative overflow-hidden shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 transition-all duration-200"
+                className="w-full text-lg sm:text-xl font-black px-12 sm:px-16 py-6 sm:py-8 h-auto bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 text-white border-0 rounded-xl relative overflow-hidden shadow-2xl transform hover:scale-105 transition-all duration-300"
                 onClick={() => {
                   console.log("V2HomePage: Start diagnosis button clicked")
                   trackEvent('start_diagnosis_v2', { step: 1, location: 'hero', version: 'v2' })
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-700"></div>
-                <div className="relative flex items-center justify-center">
-                  <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 mr-2" />
-                  <span>今すぐ無料で診断開始</span>
-                  <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-500"></div>
+                <div className="relative flex items-center justify-center gap-3">
+                  <span className="text-2xl">🚀</span>
+                  <span className="drop-shadow-lg">今すぐ無料で診断開始</span>
+                  <ArrowRight className="w-5 sm:w-6 h-5 sm:h-6" />
                 </div>
               </Button>
             </Link>
@@ -60,7 +58,7 @@ export default function V2HomePage() {
               <div className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
                 <Zap className="w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 text-white" />
               </div>
-              <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">選択肢のみ</CardTitle>
+              <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">3分で完了</CardTitle>
             </CardHeader>
             <CardContent className="text-center p-4 sm:p-6">
               <CardDescription className="text-sm sm:text-base text-gray-600 leading-relaxed">
@@ -88,11 +86,11 @@ export default function V2HomePage() {
               <div className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
                 <Users className="w-6 sm:w-7 md:w-8 h-6 sm:h-7 md:h-8 text-white" />
               </div>
-              <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">TOP5提案</CardTitle>
+              <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">最適な行動</CardTitle>
             </CardHeader>
             <CardContent className="text-center p-4 sm:p-6">
               <CardDescription className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                あなたに最適なサービス5選を優先度順に提案
+                あなたに最適な行動とサービスを優先度順に提案
               </CardDescription>
             </CardContent>
           </Card>
@@ -109,7 +107,7 @@ export default function V2HomePage() {
               }}
             >
               <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 mr-2" />
-              5分で診断を始める
+              3分で診断を始める
               <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
             </Button>
           </Link>
