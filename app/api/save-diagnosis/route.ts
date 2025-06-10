@@ -127,6 +127,7 @@ export async function POST(req: NextRequest) {
       // 既存ユーザーの場合は更新のみ（重要なデータのみ）
       const updateData = {
         current_step: session.currentStep,
+        version_type: 'v1', // v1診断として明示
         updated_at: session.updatedAt, // セッションのタイムスタンプをそのまま使用
         // 診断結果がある場合のみ更新
         ...(session.simpleResult && {
@@ -172,6 +173,7 @@ export async function POST(req: NextRequest) {
     const row = {
       ...mapSessionToRow(session),
 
+      version_type:   'v1', // v1診断として明示
       client_ip:     ip,
       country_code:  geo.country,
       region_code:   geo.region,

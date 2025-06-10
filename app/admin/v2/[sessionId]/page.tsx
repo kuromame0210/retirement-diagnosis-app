@@ -23,19 +23,18 @@ export default async function V2DiagnosisDetail({ params }: { params: { sessionI
     )
   }
 
-  // final_dataからV2固有データを取得
+  // V2データは既存フィールドに保存されているため、直接アクセス
   let finalData: any = {}
-  let actionPlan = []
-  let serviceRecommendations = []
-
-  try {
-    if (data.final_data) {
-      finalData = typeof data.final_data === 'string' ? JSON.parse(data.final_data) : data.final_data
-      actionPlan = finalData.actionPlan || []
-      serviceRecommendations = finalData.serviceRecommendations || []
-    }
-  } catch (parseError) {
-    console.error("final_data JSON解析エラー:", parseError)
+  let actionPlan: string[] = []
+  let serviceRecommendations: any[] = []
+  
+  // V2の追加データは今回は簡略化（必要に応じて後で別カラム追加）
+  finalData = {
+    summary: data.simple_summary,
+    advice: data.simple_advice,
+    breaking_point: [], // 今回は保存されていない
+    urgency: "medium", // デフォルト値
+    freeText: ""  // 今回は保存されていない
   }
 
   return (
@@ -180,12 +179,12 @@ export default async function V2DiagnosisDetail({ params }: { params: { sessionI
           
           <div>
             <label className="font-medium text-gray-700">状況分析:</label>
-            <p className="mt-1 leading-relaxed">{data.summary}</p>
+            <p className="mt-1 leading-relaxed">{data.simple_summary || finalData.summary}</p>
           </div>
           
           <div>
             <label className="font-medium text-gray-700">アドバイス:</label>
-            <p className="mt-1 leading-relaxed">{data.advice}</p>
+            <p className="mt-1 leading-relaxed">{data.simple_advice || finalData.advice}</p>
           </div>
           
           {actionPlan.length > 0 && (

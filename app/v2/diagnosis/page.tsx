@@ -26,7 +26,42 @@ export default function V2DiagnosisPage() {
   useEffect(() => {
     // ページビュー追跡
     trackEvent('v2_diagnosis_start', { version: 'v2' })
+    
+    // 初期保存を一時的に無効化
+    // initializeV2Diagnosis()
+    console.log("V2診断ページ開始 - 初期保存は無効化中")
   }, [])
+
+  const initializeV2Diagnosis = async () => {
+    try {
+      // セッションIDを生成または取得（UUID形式で生成）
+      let sessionId = sessionStorage.getItem('v2_session_id')
+      if (!sessionId) {
+        // UUID形式のIDを生成
+        sessionId = crypto.randomUUID()
+        sessionStorage.setItem('v2_session_id', sessionId)
+      }
+
+      // 初期データ保存
+      const response = await fetch('/api/save-v2-diagnosis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          answers: { satisfaction: '' }, // 空の初期データ
+          result: { type: '', summary: '', advice: '' }, // 空の初期結果
+          userAgent: navigator.userAgent,
+          isInitialSave: true // 初期保存フラグ
+        })
+      })
+
+      if (response.ok) {
+        console.log('V2診断初期データ保存成功')
+      }
+    } catch (error) {
+      console.warn('V2診断初期データ保存エラー:', error)
+    }
+  }
 
   const handleSingleSelect = (value: string) => {
     const questionId = question.id
