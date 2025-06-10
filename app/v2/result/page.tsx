@@ -566,101 +566,228 @@ export default function V2ResultPage() {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 md:p-8">
             <div className="space-y-4 sm:space-y-6">
-              {result.serviceRecommendations.map((service, index) => (
-                <div key={index} className="relative border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:border-green-300 cursor-pointer group">
-                  {/* 全体をクリック可能にするためのリンク */}
-                  {service.url && (
-                    <a 
-                      href={service.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="absolute inset-0 z-10"
-                      aria-label={`${service.name}の詳細を確認`}
-                    />
-                  )}
-                  
-                  <div className="p-4 sm:p-6 relative z-20 pointer-events-none">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 sm:mb-4 gap-3">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg group-hover:scale-110 transition-transform">
-                        {service.rank}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{service.name}</h4>
-                          <ExternalLink className="w-4 h-4 text-blue-500 group-hover:text-green-500 transition-colors" />
+              {result.serviceRecommendations.map((service, index) => {
+                const getRankStyle = (index: number) => {
+                  switch (index) {
+                    case 0:
+                      return {
+                        cardClass: "relative border-2 border-yellow-400 rounded-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-gradient-to-br from-yellow-50 to-orange-50 shadow-lg",
+                        rankBadge: "w-16 sm:w-20 h-16 sm:h-20 bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-lg border-4 border-white",
+                        rankIcon: "🏆",
+                        rankText: "1位"
+                      }
+                    case 1:
+                      return {
+                        cardClass: "relative border-2 border-gray-400 rounded-xl hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-gray-50 to-blue-50 shadow-md",
+                        rankBadge: "w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg border-4 border-white",
+                        rankIcon: "🥈",
+                        rankText: "2位"
+                      }
+                    case 2:
+                      return {
+                        cardClass: "relative border-2 border-orange-400 rounded-xl hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-orange-50 to-yellow-50 shadow-md",
+                        rankBadge: "w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg border-4 border-white",
+                        rankIcon: "🥉",
+                        rankText: "3位"
+                      }
+                    default:
+                      return {
+                        cardClass: "relative border border-blue-200 rounded-lg hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-white",
+                        rankBadge: "w-12 sm:w-14 h-12 sm:h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-md border-3 border-white",
+                        rankIcon: "⭐",
+                        rankText: `${index + 1}位`
+                      }
+                  }
+                }
+                
+                const rankStyle = getRankStyle(index)
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={`${rankStyle.cardClass} cursor-pointer group`}
+                    onClick={() => {
+                      console.log('=== V2 CARD CLICK DEBUG ===')
+                      console.log('Service object:', service)
+                      console.log('Service URL:', service.url)
+                      console.log('Service ID:', service.id)
+                      console.log('Service name:', service.name)
+                      
+                      trackEvent('v2_service_card_click', {
+                        button_location: 'v2_result_page',
+                        service_name: service.name,
+                        service_id: service.id,
+                        service_rank: index + 1,
+                        click_type: 'card_click'
+                      })
+                      
+                      window.open(service.url, '_blank')
+                    }}
+                  >
+                    {/* ランキングバッジ（左上に配置） */}
+                    <div className="absolute -top-3 -left-3 z-20">
+                      <div className={rankStyle.rankBadge}>
+                        <div className="text-center">
+                          <div className="text-lg sm:text-xl">{rankStyle.rankIcon}</div>
+                          <div className="text-xs font-bold">{rankStyle.rankText}</div>
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-600">{Array.isArray(service.category) ? service.category.join(' • ') : service.category}</p>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(service.priority)} group-hover:scale-105 transition-transform`}>
-                      {service.priority === "high" ? "高優先度" : service.priority === "medium" ? "中優先度" : "低優先度"}
-                    </span>
-                  </div>
-                  
-                  <p className="text-sm sm:text-base text-gray-700 mb-4 group-hover:text-gray-900 transition-colors">{service.description}</p>
-                  
-                  {/* カテゴリ情報 */}
-                  {service.category && (
-                    <div className="mb-3">
-                      <div className="flex flex-wrap gap-1 sm:gap-2">
-                        {Array.isArray(service.category) ? (
-                          service.category.map((cat, idx) => (
-                            <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md font-medium">
-                              {cat}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md font-medium group-hover:bg-purple-200 transition-colors">
-                            {service.category}
-                          </span>
-                        )}
+                    
+                    <div className="p-4 sm:p-6 relative pt-8">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 sm:mb-4 gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 flex-1">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 flex-1 ml-4 sm:ml-12">
+                            <div className="flex-1 order-1 sm:order-2 text-center sm:text-left">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <h4 
+                                  className={`cursor-pointer transition-all duration-200 ${
+                                    index === 0 
+                                      ? 'text-3xl sm:text-4xl font-black text-black hover:text-gray-900 drop-shadow-xl' 
+                                      : index === 1
+                                      ? 'text-2xl sm:text-3xl font-bold text-black hover:text-gray-900 drop-shadow-lg'
+                                      : index === 2
+                                      ? 'text-xl sm:text-2xl font-bold text-black hover:text-gray-900 drop-shadow-md'
+                                      : 'text-lg sm:text-xl font-bold text-gray-800 hover:text-blue-600'
+                                  }`}
+                                  style={{
+                                    textShadow: index === 0 
+                                      ? '1px 1px 0px #fbbf24, -1px -1px 0px #fbbf24, 1px -1px 0px #fbbf24, -1px 1px 0px #fbbf24, 2px 2px 0px #f59e0b, 0px 0px 8px #fbbf24'
+                                      : index === 1
+                                      ? '1px 1px 0px #e5e7eb, -1px -1px 0px #e5e7eb, 1px -1px 0px #e5e7eb, -1px 1px 0px #e5e7eb, 2px 2px 0px #6b7280, 0px 0px 8px #9ca3af'
+                                      : index === 2
+                                      ? '1px 1px 0px #fed7aa, -1px -1px 0px #fed7aa, 1px -1px 0px #fed7aa, -1px 1px 0px #fed7aa, 2px 2px 0px #ea580c, 0px 0px 8px #f97316'
+                                      : undefined
+                                  }}
+                                  onClick={() => {
+                                    console.log('=== V2 TITLE CLICK DEBUG ===')
+                                    console.log('Service object:', service)
+                                    console.log('Service URL:', service.url)
+                                    console.log('Service ID:', service.id)
+                                    console.log('Service name:', service.name)
+                                    
+                                    trackEvent('v2_service_title_click', {
+                                      button_location: 'v2_result_page',
+                                      service_name: service.name,
+                                      service_id: service.id,
+                                      service_rank: index + 1,
+                                      click_type: 'title_click'
+                                    })
+                                    
+                                    window.open(service.url, '_blank')
+                                  }}
+                                >
+                                  {service.name}
+                                </h4>
+                                <ExternalLink className="w-4 h-4 text-blue-500 group-hover:text-green-500 transition-colors mx-auto sm:mx-0" />
+                              </div>
+                              <p className="text-xs sm:text-sm text-gray-600">{Array.isArray(service.category) ? service.category.join(' • ') : service.category}</p>
+                            </div>
+                            {service.image && (
+                              <img 
+                                src={service.image} 
+                                alt={service.name}
+                                className="w-full h-56 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-xl object-contain sm:object-cover shadow-md hover:shadow-lg transition-shadow flex-shrink-0 mx-auto sm:mx-0 order-2 sm:order-1"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(service.priority)} group-hover:scale-105 transition-transform`}>
+                          {service.priority === "high" ? "高優先度" : service.priority === "medium" ? "中優先度" : "低優先度"}
+                        </span>
                       </div>
-                    </div>
-                  )}
-                  
-                  {/* タグ */}
-                  {service.tags && (Array.isArray(service.tags) ? service.tags.length > 0 : true) && (
-                    <div className="mb-4">
-                      <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-500 group-hover:text-yellow-600 transition-colors" />
-                        特徴タグ
-                      </h5>
-                      <div className="flex flex-wrap gap-1 sm:gap-2">
-                        {Array.isArray(service.tags) ? (
-                          service.tags.map((tag, idx) => (
-                            <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md group-hover:bg-gray-200 transition-colors">
-                              {tag}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md group-hover:bg-gray-200 transition-colors">
-                            {service.tags}
-                          </span>
-                        )}
+                      
+                      <p className="text-sm sm:text-base text-gray-700 mb-6 group-hover:text-gray-900 transition-colors">{service.description}</p>
+                      
+                      {/* カテゴリ情報 */}
+                      {service.category && (
+                        <div className="mb-4">
+                          <div className="flex flex-wrap gap-1 sm:gap-2">
+                            {Array.isArray(service.category) ? (
+                              service.category.map((cat, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md font-medium">
+                                  {cat}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md font-medium group-hover:bg-purple-200 transition-colors">
+                                {service.category}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* タグ */}
+                      {service.tags && (Array.isArray(service.tags) ? service.tags.length > 0 : true) && (
+                        <div className="mb-4">
+                          <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
+                            <Star className="w-4 h-4 text-yellow-500 group-hover:text-yellow-600 transition-colors" />
+                            特徴タグ
+                          </h5>
+                          <div className="flex flex-wrap gap-1 sm:gap-2">
+                            {Array.isArray(service.tags) ? (
+                              service.tags.map((tag, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md group-hover:bg-gray-200 transition-colors">
+                                  {tag}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md group-hover:bg-gray-200 transition-colors">
+                                {service.tags}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-6 group-hover:bg-blue-100 group-hover:border-blue-300 transition-colors">
+                        <p className="text-sm sm:text-base text-blue-800">
+                          <strong>推奨理由:</strong> {service.reason}
+                        </p>
                       </div>
-                    </div>
-                  )}
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4 group-hover:bg-blue-100 group-hover:border-blue-300 transition-colors">
-                    <p className="text-sm sm:text-base text-blue-800">
-                      <strong>推奨理由:</strong> {service.reason}
-                    </p>
-                  </div>
-                  </div>
-                  
-                  {/* 大きな詳細確認ボタン */}
-                  {service.url && (
-                    <div className="px-4 sm:px-6 pb-4 sm:pb-6 relative z-20">
-                      <div className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl transition-all duration-200 transform group-hover:scale-105 shadow-xl group-hover:shadow-2xl flex items-center justify-center gap-3 text-lg sm:text-xl pointer-events-auto">
+                      
+                      {/* 詳細確認ボタン */}
+                      <button
+                        className={`w-full py-5 sm:py-6 px-6 sm:px-8 rounded-xl font-bold text-lg sm:text-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-3 ${
+                          index === 0 
+                            ? "bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 hover:from-yellow-500 hover:via-yellow-600 hover:to-orange-600 text-black shadow-xl hover:shadow-2xl animate-pulse hover:animate-none font-black" 
+                            : index === 1
+                            ? "bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 text-white shadow-lg hover:shadow-xl animate-pulse hover:animate-none"
+                            : index === 2
+                            ? "bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl animate-pulse hover:animate-none"
+                            : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation() // カード全体のクリックを防ぐ
+                          console.log('=== V2 BUTTON CLICK DEBUG ===')
+                          console.log('Service object:', service)
+                          console.log('Service URL:', service.url)
+                          console.log('Service ID:', service.id)
+                          console.log('Service name:', service.name)
+                          
+                          trackEvent('v2_service_button_click', {
+                            button_location: 'v2_result_page',
+                            service_name: service.name,
+                            service_id: service.id,
+                            service_rank: index + 1,
+                            click_type: 'button_click'
+                          })
+                          
+                          window.open(service.url, '_blank')
+                        }}
+                      >
                         <span className="text-2xl sm:text-3xl">👆</span>
-                        <span>詳細を確認する</span>
-                        <ExternalLink className="w-6 h-6" />
-                      </div>
+                        <span>{index === 0 ? '🚀 今すぐ詳細をチェック！' : '✨ 詳細を確認する'}</span>
+                        <ExternalLink className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </button>
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -684,14 +811,15 @@ export default function V2ResultPage() {
             <div className="space-y-3 sm:space-y-4">
               <Button 
                 size="lg"
-                className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 sm:py-6 px-6 sm:px-8 text-lg sm:text-xl shadow-2xl transform hover:scale-105 transition-all duration-200 relative overflow-hidden rounded-xl"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 sm:py-6 px-6 sm:px-8 text-lg sm:text-xl shadow-2xl transform hover:scale-105 transition-all duration-200 relative overflow-hidden rounded-xl border-0"
                 onClick={() => {
-                  trackEvent('v2_ai_chat_click', { 
-                    version: 'v2',
+                  trackEvent('ai_chat_start_click', {
+                    button_location: 'v2_result_page',
+                    source_diagnosis: 'v2',
                     result_type: result.type,
-                    urgency: result.urgency
+                    urgency_level: result.urgency,
+                    button_text: 'AI対話診断を始める'
                   })
-                  // v2の回答データを保持したまま既存のチャット診断へ
                   router.push('/diagnosis/chat')
                 }}
               >
@@ -726,12 +854,14 @@ export default function V2ResultPage() {
           <Button 
             size="lg"
             variant="outline"
-            className="w-full sm:w-auto border-2 border-gray-300 text-gray-600 hover:bg-gray-50 font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg shadow-lg transform hover:scale-105 transition-all duration-200 rounded-xl"
+            className="w-full sm:w-auto border-2 border-green-500 text-green-700 hover:bg-green-50 hover:border-green-600 font-bold py-4 sm:py-5 px-6 sm:px-8 text-base sm:text-lg shadow-lg transform hover:scale-105 transition-all duration-200 rounded-xl"
             onClick={() => {
-              trackEvent('v2_diagnosis_retry', { 
-                version: 'v2',
+              trackEvent('diagnosis_retry_click', {
+                button_location: 'v2_result_page',
+                source_diagnosis: 'v2',
                 result_type: result.type,
-                urgency: result.urgency
+                urgency_level: result.urgency,
+                button_text: 'もう一度診断する'
               })
               router.push('/v2')
             }}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +29,7 @@ interface FinalResult {
 }
 
 export default function FinalPage() {
+  const router = useRouter()
   const [session, setSession] = useState<any>(null)
   const [finalResult, setFinalResult] = useState<FinalResult | null>(null)
   const [loading, setLoading] = useState(true)
@@ -173,7 +175,7 @@ ${finalResult.encouragingMessage ? `応援メッセージ:\n${finalResult.encour
 
   const restartDiagnosis = () => {
     clearSession()
-    window.location.href = "/"
+    router.push("/")
   }
 
   // ✅ サービス推奨の生成
@@ -346,21 +348,37 @@ ${finalResult.encouragingMessage ? `応援メッセージ:\n${finalResult.encour
           )}
 
           {/* アクションボタン */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-6">
+          <div className="flex flex-col sm:flex-row gap-4 pt-6">
             <Button 
-              onClick={downloadResult} 
-              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+              onClick={() => {
+                trackEvent('download_result_click', {
+                  button_location: 'final_diagnosis_page',
+                  button_text: '結果をダウンロード',
+                  result_type: finalResult.finalType,
+                  urgency_level: finalResult.urgencyLevel
+                })
+                downloadResult()
+              }} 
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl border-0"
             >
-              <Download className="w-4 h-4 mr-2" />
-              結果をダウンロード 📄
+              <Download className="w-5 h-5 mr-2" />
+              結果をダウンロード
             </Button>
             <Button 
               variant="outline" 
-              onClick={restartDiagnosis} 
-              className="flex-1 border-2 border-gray-300 hover:bg-gray-50"
+              onClick={() => {
+                trackEvent('diagnosis_restart_click', {
+                  button_location: 'final_diagnosis_page',
+                  button_text: '新しい診断を開始',
+                  result_type: finalResult.finalType,
+                  urgency_level: finalResult.urgencyLevel
+                })
+                restartDiagnosis()
+              }} 
+              className="flex-1 border-2 border-green-500 text-green-700 hover:bg-green-50 hover:border-green-600 font-bold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              新しい診断を開始 🔄
+              <RotateCcw className="w-5 h-5 mr-2" />
+              新しい診断を開始
             </Button>
           </div>
 

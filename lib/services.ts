@@ -8,6 +8,7 @@ export interface ServiceInfo {
     urgencyLevel: string[]
     url: string
     tags: string[]
+    image?: string
   }
   
   // 推奨サービス用の拡張型
@@ -29,7 +30,8 @@ export interface ServiceInfo {
       targetType: ["疲労限界型"],
       urgencyLevel: ["high"],
       url: "http://msm.to/D5GzMLt",
-      tags: ["退職", "ストレス", "ブラック企業"]
+      tags: ["退職", "ストレス", "ブラック企業"],
+      image: "/image/taishoku-jobs.jpg"
     },
     /* 転職支援 -------------------------------------------------------- */
     {
@@ -40,7 +42,8 @@ export interface ServiceInfo {
       targetType: ["現状維持迷い型", "成長志向型"],
       urgencyLevel: ["medium", "low"],
       url: "http://msm.to/F3DdYYm",
-      tags: ["転職", "キャリアアップ", "一般転職"]
+      tags: ["転職", "キャリアアップ", "一般転職"],
+      image: "/image/albatross.png"
     },
     {
       id: "se-navi",
@@ -60,7 +63,8 @@ export interface ServiceInfo {
       targetType: ["成長志向型"],
       urgencyLevel: ["medium", "low"],
       url: "http://msm.to/FRtWvpf",
-      tags: ["M&A", "金融", "キャリアアップ"]
+      tags: ["M&A", "金融", "キャリアアップ"],
+      image: "/image/m-and-a-beginners.png"
     },
     {
       id: "hr-career-agent",
@@ -70,7 +74,8 @@ export interface ServiceInfo {
       targetType: ["成長志向型", "現状維持迷い型"],
       urgencyLevel: ["medium"],
       url: "http://msm.to/8W1WKda",
-      tags: ["人材業界", "営業", "キャリアチェンジ"]
+      tags: ["人材業界", "営業", "キャリアチェンジ"],
+      image: "/image/hr_career_agent.png"
     },
     {
       id: "careerpark",
@@ -80,7 +85,8 @@ export interface ServiceInfo {
       targetType: ["現状維持迷い型"],
       urgencyLevel: ["low"],
       url: "https://h.accesstrade.net/sp/cc?rk=0100pmwp00nyac",
-      tags: ["就活", "自己分析", "書類対策"]
+      tags: ["就活", "自己分析", "書類対策"],
+      image: "/image/careerpark.png"
     },
     {
       id: "uzuz",
@@ -111,7 +117,8 @@ export interface ServiceInfo {
       targetType: ["現状維持迷い型", "成長志向型"],
       urgencyLevel: ["low"],
       url: "https://h.accesstrade.net/sp/cc?rk=0100pqmy00nyac",
-      tags: ["副業", "稼ぐ", "リスク分散"]
+      tags: ["副業", "稼ぐ", "リスク分散"],
+      image: "/image/side-business-seminar.jpg"
     },
     /* 学習・留学 ------------------------------------------------------ */
     {

@@ -9,7 +9,7 @@ import { trackEvent } from "@/lib/analytics"
 export default function V2HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      
+
       {/* Hero Section */}
       <div className="container mx-auto px-2 sm:px-4 pt-12 sm:pt-20 pb-8 sm:pb-12 max-w-6xl relative z-10">
         <div className="text-center mb-8 sm:mb-16">
@@ -24,7 +24,7 @@ export default function V2HomePage() {
               </span>
             </span>
             <span className="block text-2xl sm:text-4xl md:text-5xl font-bold text-gray-800">
-              AI退職診断 v2
+              AI退職診断
             </span>
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mb-4 sm:mb-6 font-light">選択肢のみで、もっと簡単に</p>
