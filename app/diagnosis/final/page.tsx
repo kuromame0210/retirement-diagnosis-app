@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Download, RotateCcw, Heart, Sparkles } from "lucide-react"
-import { getSession, clearSession } from "@/lib/storage"
+import { getSession, clearSession, getJSTTimestamp } from "@/lib/storage"
 import ServiceRecommendations from "@/components/ServiceRecommendations"
 import { recommendServices } from "@/lib/serviceRecommendation"
 
@@ -98,7 +98,7 @@ export default function FinalPage() {
       const updatedSession = {
         ...sessionData,
         finalResult: result,
-        completedAt: new Date().toISOString(),
+        completedAt: getJSTTimestamp(),
       }
       setSession(updatedSession)
     } catch (err) {
