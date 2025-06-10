@@ -231,6 +231,58 @@ export default function ChatPage() {
       return
     }
 
+    // ✅ V2診断データからの遷移をサポート
+    const v2AnswersStr = sessionStorage.getItem('v2_answers')
+    const v2ResultStr = sessionStorage.getItem('v2_result')
+    
+    if (v2AnswersStr && v2ResultStr) {
+      console.log("✅ V2診断データからの遷移を検出")
+      try {
+        const v2Answers = JSON.parse(v2AnswersStr)
+        const v2Result = JSON.parse(v2ResultStr)
+        
+        // V2データをV1形式に変換
+        const convertedBasicAnswers = {
+          q1: v2Answers.satisfaction || "",
+          q2: v2Answers.night_thoughts || "",
+          q3: v2Answers.demographics?.age || "",
+          q4: v2Answers.demographics?.job || "",
+          q5: v2Answers.money_reality || ""
+        }
+        
+        const convertedSimpleResult = {
+          type: v2Result.type,
+          urgency: v2Result.urgency,
+          summary: v2Result.summary,
+          advice: v2Result.advice
+        }
+        
+        // 変換されたデータでセッションを作成
+        const convertedSessionData = {
+          userId: sessionStorage.getItem('v2_session_id') || sessionData.userId,
+          basicAnswers: convertedBasicAnswers,
+          simpleResult: convertedSimpleResult,
+          textInput: v2Answers.freeText || "",
+          chatHistory: sessionData.chatHistory || [],
+          currentStep: 4
+        }
+        
+        console.log("✅ V2データをV1形式に変換完了:", convertedSessionData)
+        setSession(convertedSessionData)
+        setChatHistory(convertedSessionData.chatHistory || [])
+        
+        const nextQuestionIndex = (convertedSessionData.chatHistory?.length || 0) + 1
+        if (nextQuestionIndex <= 5) {
+          await generateQuestion(nextQuestionIndex, convertedSessionData)
+        } else {
+          router.push("/diagnosis/final")
+        }
+        return
+      } catch (error) {
+        console.error("V2データの変換に失敗:", error)
+      }
+    }
+
     if (!('basicAnswers' in sessionData)) {
       console.error("❌ FAILURE: basicAnswersプロパティが存在しません")
       console.log("利用可能なプロパティ:", Object.keys(sessionData))

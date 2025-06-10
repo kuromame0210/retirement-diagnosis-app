@@ -5,10 +5,11 @@ import { getJSTTimestamp } from "@/lib/storage"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { answers, result, sessionId, userAgent, prefecture } = body
+    const { answers, result, sessionId, userAgent, prefecture, isInitialSave } = body
 
     console.log("=== V2診断保存API開始 ===")
-    console.log("Received data:", { answers, result, sessionId })
+    console.log("Received data:", { answers, result, sessionId, isInitialSave })
+    console.log("Request body keys:", Object.keys(body))
 
     // 必須データの検証
     if (!answers || !result || !sessionId) {
@@ -28,56 +29,87 @@ export async function POST(request: Request) {
 
     if (existingRecord) {
       console.log("✅ 既存のV2診断レコードが見つかりました:", existingRecord.user_id)
+      
+      // 既存レコードを更新
+      const timestamp = getJSTTimestamp()
+      const updateData = {
+        current_step: isInitialSave ? 1 : 4,
+        version_type: 'v2',
+        
+        // 結果データ（診断完了時のみ更新）
+        ...(result.type && {
+          simple_type: result.type,
+          simple_summary: result.summary,
+          simple_advice: result.advice,
+          final_type: `v2_${result.type}`,
+        }),
+        
+        // 回答データ（診断完了時のみ更新）
+        ...(answers.satisfaction && {
+          q1: answers.satisfaction,
+          q2: answers.night_thoughts || "",
+          q3: answers.demographics?.age || "",
+          q4: answers.demographics?.job || "",
+          q5: answers.money_reality || "",
+        }),
+        
+        updated_at: timestamp,
+      }
+      
+      console.log("既存レコード更新データ:", updateData)
+      
+      const { error: updateError } = await supabaseAdmin
+        .from("career_user_diagnosis")
+        .update(updateData)
+        .eq("user_id", sessionId)
+      
+      if (updateError) {
+        console.error("❌ 既存レコード更新エラー:", updateError)
+        return NextResponse.json(
+          { error: "既存レコード更新に失敗しました", details: updateError.message },
+          { status: 500 }
+        )
+      }
+      
+      console.log("✅ 既存V2レコード更新成功")
       return NextResponse.json({ 
         success: true, 
         id: existingRecord.user_id,
-        message: "既存レコードを使用"
+        message: "既存レコードを更新しました"
       })
     }
 
     // 新規レコード作成
     const timestamp = getJSTTimestamp()
     
-    // 既存のcareer_user_diagnosisテーブル構造に合わせてV2データを保存
+    // 既存のテーブル構造に完全に合わせてV2データを保存
     const diagnosisData = {
       user_id: sessionId,
+      current_step: isInitialSave ? 1 : 4, // 初期保存時は1、完了時は4
+      version_type: 'v2', // 新しいカラム
       
-      // 既存のフィールドにV2データをマッピング
+      // 基本的なv2回答データ
       q1: answers.satisfaction || "",
       q2: answers.night_thoughts || "",
       q3: answers.demographics?.age || "",
       q4: answers.demographics?.job || "",
       q5: answers.money_reality || "",
-      q6: answers.escape_plan || "",
-      q7: answers.ideal_future || "",
-      q8: answers.skill_confidence || "",
-      q9: answers.relationship_reality || "",
-      q10: answers.action_readiness || "",
       
-      // 結果データ
-      simple_type: result.type,
-      final_type: `v2_${result.type}`,
-      summary: result.summary,
-      advice: result.advice,
+      // 結果データ（既存フィールドのみ使用）
+      simple_type: result.type || null,
+      simple_summary: result.summary || null,
+      simple_advice: result.advice || null,
+      final_type: result.type ? `v2_${result.type}` : null,
       
-      // JSON形式で保存
-      final_data: JSON.stringify({
-        version: "v2",
-        actionPlan: result.actionPlan,
-        serviceRecommendations: result.serviceRecommendations,
-        urgency: result.urgency,
-        freeText: answers.freeText,
-        breaking_point: answers.breaking_point
-      }),
-      
-      // メタデータ
-      user_agent: userAgent || null,
-      prefecture: prefecture || null,
+      // メタデータ（user_agentカラムは存在しないため削除）
       created_at: timestamp,
       updated_at: timestamp,
     }
 
     console.log("保存するデータ:", diagnosisData)
+    console.log("version_type設定値:", diagnosisData.version_type)
+    console.log("final_type設定値:", diagnosisData.final_type)
+    console.log("result.type元データ:", result.type)
 
     const { data, error } = await supabaseAdmin
       .from("career_user_diagnosis")
@@ -87,8 +119,11 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("❌ Supabase保存エラー:", error)
+      console.error("❌ エラーコード:", error.code)
+      console.error("❌ エラーメッセージ:", error.message)
+      console.error("❌ エラー詳細:", error.details)
       return NextResponse.json(
-        { error: "データベース保存に失敗しました" },
+        { error: "データベース保存に失敗しました", details: error.message },
         { status: 500 }
       )
     }

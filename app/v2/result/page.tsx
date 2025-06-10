@@ -33,103 +33,95 @@ const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
   if (answers.satisfaction === "dread") {
     type = "緊急転職型"
     urgency = "high"
-    summary = "月曜日の朝に吐き気を感じるほど辛い状況ですね。心身の健康を考えると、早急な環境改善が必要です。"
+    summary = "月曜日の朝に吐き気を感じるレベルは明らかに異常です。あなたの心と身体が「今すぐここから逃げろ」と警告を発しています。これは甘えでも弱さでもありません。生理的な拒絶反応が起きている状況で働き続けることは、うつ病や身体的な病気につながる危険性が高いです。"
   } else if (answers.satisfaction === "heavy") {
     type = "転職検討型"
     urgency = "medium"
-    summary = "職場に向かうのが重い気持ちになるのは、現在の環境があなたに合っていないサインかもしれません。"
+    summary = "職場に向かう足取りが重いのは、あなたの本能が「この環境は自分に合わない」と教えてくれているサインです。まだ耐えられる範囲かもしれませんが、このまま放置すると確実に悪化します。今が動くべきタイミングです。"
   } else if (answers.satisfaction === "neutral") {
     type = "様子見型"
     urgency = "low"
-    summary = "仕事に対して普通の感情を持っていますが、もっと充実した働き方を見つける余地がありそうです。"
+    summary = "現状に特別な不満はないものの、「このままでいいのか？」という漠然とした不安があるのではないでしょうか。安定は得られているが、成長や充実感に欠けている状態です。人生は一度きり。もっと充実した働き方を探す価値があります。"
   } else {
     type = "成長型"
     urgency = "low"
-    summary = "仕事に対してポジティブな気持ちを持っていますね。さらなる成長機会を探すタイミングかもしれません。"
+    summary = "仕事に対してポジティブな感情を持てているのは素晴らしいことです。ただし、現状に満足しすぎて成長が止まってしまうリスクもあります。より大きな挑戦や責任のある環境で、さらなる飛躍を目指すタイミングかもしれません。"
   }
   
   // 夜の思考パターンによる緊急度調整
   if (answers.night_thoughts === "escape_thoughts") {
     urgency = "high"
-    summary += "夜に『逃げ出したい』と考えてしまうのは、相当なストレスを感じている証拠です。"
+    summary += "夜に『逃げ出したい』という思考が浮かぶのは、日中に抑圧された本音が表れている状態です。これは心の限界が近づいているサインです。"
   } else if (answers.night_thoughts === "tomorrow_work") {
     if (urgency === "low") urgency = "medium"
-    summary += "明日の仕事で頭がいっぱいになるのは、仕事の負担が大きいのかもしれません。"
+    summary += "明日の仕事のことで頭がいっぱいになるのは、ワークライフバランスが完全に崩れている証拠です。"
   }
   
-  // お金の現実に基づくアドバイス
+  // 最優先アクションを特定（ここで包括的に判断）
+  let criticalActions: string[] = []
+  
+  // 健康リスクが最優先
+  if (answers.breaking_point?.includes("health_warning") || answers.satisfaction === "dread") {
+    criticalActions.push("即座に有給を取得し、心身の休息を最優先する")
+  }
+  
+  // パワハラ環境は緊急脱出
+  if (answers.breaking_point?.includes("boss_unreasonable") || answers.relationship_reality === "toxic_environment") {
+    criticalActions.push("有害な職場環境から90日以内に転職する")
+  }
+  
+  // 経済状況に応じた戦略
   if (answers.money_reality === "barely_survive" || answers.money_reality === "no_luxury") {
-    advice += "経済的な厳しさを感じているので、年収アップを最優先に転職活動を進めましょう。"
-    actionPlan.push("年収アップが期待できる業界・職種を研究する")
-    actionPlan.push("給与交渉のスキルを身につける")
+    advice = "率直に言います。あなたは経済的にも精神的にも追い詰められています。転職活動は「年収アップ」を絶対条件にして進めてください。今の給与では人生設計ができません。"
+    if (criticalActions.length < 3) {
+      criticalActions.push("年収を最低20%上げる転職先のみに応募する")
+    }
   } else if (answers.money_reality === "comfortable" || answers.money_reality === "wealthy") {
-    advice += "経済面では安定しているので、やりがいや成長機会を重視した選択ができそうです。"
-    actionPlan.push("自分の価値観と合う企業文化を探す")
-    actionPlan.push("長期的なキャリアプランを設計する")
+    advice = "経済面での余裕があるあなたには、お金以上に大切なものを追求する権利があります。「やりがい」「成長」「働き方」を妥協せず、理想の環境を求めて動くべきです。"
+    if (criticalActions.length < 3) {
+      criticalActions.push("企業文化と価値観の適合性を最重要視する")
+    }
+  } else {
+    advice = "現在の状況を冷静に分析すると、変化が必要な時期に来ています。現状維持は実質的な後退です。積極的に行動を起こしましょう。"
   }
   
-  // 理想の未来による推奨
-  if (answers.ideal_future === "freelance_expert") {
-    actionPlan.push("フリーランスとしてのスキルと実績を準備する")
-    actionPlan.push("個人事業の基礎知識を学ぶ")
-  } else if (answers.ideal_future === "corporate_leader") {
-    actionPlan.push("マネジメント経験を積める環境を探す")
-    actionPlan.push("リーダーシップスキルを向上させる")
-  } else if (answers.ideal_future === "work_life_balance") {
-    actionPlan.push("働き方改革に積極的な企業を探す")
-    actionPlan.push("残業時間や有給取得率を事前に確認する")
-  }
-  
-  // スキル自信度による推奨
-  if (answers.skill_confidence === "very_low" || answers.skill_confidence === "low_confidence") {
-    actionPlan.push("まずはスキルアップで市場価値を高める")
-    actionPlan.push("オンライン学習や資格取得を検討する")
-  } else if (answers.skill_confidence === "high_confidence") {
-    actionPlan.push("ハイクラス転職を狙って条件交渉を行う")
-    actionPlan.push("スキルを活かせる新しい挑戦を探す")
-  }
-  
-  // 転職活動の覚悟による推奨
+  // 転職活動の準備状況に基づく具体的アクション
   if (answers.action_readiness === "serious_hunting" || answers.action_readiness === "active_preparation") {
-    actionPlan.push("既に動いているので、エージェントを活用して効率化を図る")
-    actionPlan.push("面接対策を強化して成功率を上げる")
+    if (criticalActions.length < 3) {
+      criticalActions.push("転職エージェント2社と面談し、市場価値を客観視する")
+    }
   } else if (answers.action_readiness === "just_thinking" || answers.action_readiness === "not_ready") {
-    actionPlan.push("まずは情報収集から始めて転職市場を理解する")
-    actionPlan.push("自分の強みと市場価値を客観的に把握する")
+    if (criticalActions.length < 3) {
+      criticalActions.push("30日以内に転職活動を開始する明確な決断をする")
+    }
   }
   
-  // 人間関係の現実による配慮
-  if (answers.relationship_reality === "toxic_environment") {
-    actionPlan.push("有害な環境から早急に脱出することを最優先にする")
-    actionPlan.push("転職時は企業文化や人間関係を慎重に確認する")
-  } else if (answers.relationship_reality === "family_like") {
-    actionPlan.push("現在の良好な関係を活かしつつ、さらなる成長機会を探す")
-    actionPlan.push("社内での昇進・異動も含めて選択肢を検討する")
+  // スキル自信度に基づく戦略
+  if (answers.skill_confidence === "very_low" || answers.skill_confidence === "low_confidence") {
+    if (criticalActions.length < 3) {
+      criticalActions.push("3ヶ月以内に市場価値を高める具体的スキルを身につける")
+    }
+  } else if (answers.skill_confidence === "high_confidence") {
+    if (criticalActions.length < 3) {
+      criticalActions.push("現在の年収+30%以上の求人のみに絞って応募する")
+    }
   }
   
-  // 破綻ポイントによる緊急度調整
-  if (answers.breaking_point?.includes("health_warning")) {
-    urgency = "high"
-    actionPlan.push("健康第一。まずは休息と環境改善を最優先に")
-  }
-  if (answers.breaking_point?.includes("boss_unreasonable")) {
-    actionPlan.push("パワハラ環境からの脱出を最優先に転職活動を進める")
+  // 理想の未来に基づく方向性（最後に追加）
+  if (criticalActions.length < 3) {
+    if (answers.ideal_future === "freelance_expert") {
+      criticalActions.push("6ヶ月以内に副業で収入を得られる体制を構築する")
+    } else if (answers.ideal_future === "corporate_leader") {
+      criticalActions.push("マネジメント経験を積める環境への転職を決断する")
+    } else if (answers.ideal_future === "work_life_balance") {
+      criticalActions.push("残業月20時間以下の企業のみを転職候補にする")
+    } else {
+      criticalActions.push("自分の価値観を明確にし、それに合った転職軸を決める")
+    }
   }
   
-  // フリーテキストがある場合の追加アドバイス
-  if (answers.freeText && answers.freeText.length > 0) {
-    actionPlan.push("具体的な状況を踏まえたカスタムアドバイスを実施")
-  }
-  
-  // 基本的なアクションプラン
-  if (actionPlan.length === 0) {
-    actionPlan = [
-      "自分の強みとスキルを整理する",
-      "転職市場の動向を調査する",
-      "履歴書・職務経歴書を更新する",
-      "現在の状況を客観視するための時間を作る"
-    ]
-  }
+  // 最終的に3つに絞る
+  actionPlan = criticalActions.slice(0, 3)
   
   // サービス推奨（新しいロジック使用）
   let serviceRecommendations: V2RecommendedService[] = []
@@ -308,11 +300,19 @@ export default function V2ResultPage() {
       console.log("保存する回答データ:", answersData)
       console.log("保存する結果データ:", resultData)
       
-      // セッションIDを生成または取得
+      // セッションIDを生成または取得（UUID形式で生成）
       let sessionId = sessionStorage.getItem('v2_session_id')
       if (!sessionId) {
-        sessionId = `v2_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        // UUID形式のIDを生成
+        sessionId = crypto.randomUUID()
         sessionStorage.setItem('v2_session_id', sessionId)
+      }
+
+      // 重複保存を防ぐためのフラグをチェック
+      const saveKey = `v2_saved_${sessionId}`
+      if (sessionStorage.getItem(saveKey) === 'true') {
+        console.log("既に保存済みのセッションです。重複保存をスキップします。")
+        return
       }
 
       const saveData = {
@@ -320,10 +320,13 @@ export default function V2ResultPage() {
         result: resultData,
         sessionId,
         userAgent: navigator.userAgent,
-        prefecture: null // TODO: 都道府県取得があれば実装
+        prefecture: null, // TODO: 都道府県取得があれば実装
+        isInitialSave: false // 診断完了時の保存
       }
 
       console.log("データベース保存リクエスト:", JSON.stringify(saveData, null, 2))
+      console.log("保存時のresult.type:", resultData.type)
+      console.log("期待されるfinal_type:", `v2_${resultData.type}`)
 
       const response = await fetch("/api/save-v2-diagnosis", {
         method: "POST",
@@ -336,6 +339,9 @@ export default function V2ResultPage() {
       if (response.ok) {
         const result = await response.json()
         console.log("✅ V2診断データ保存成功:", result)
+        
+        // 保存成功フラグを設定
+        sessionStorage.setItem(saveKey, 'true')
         
         // 保存成功を追跡
         trackEvent('v2_diagnosis_saved', {
