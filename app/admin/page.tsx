@@ -16,17 +16,15 @@ export default async function DiagnosisList() {
 
   if (v1Error) throw v1Error
 
-  // V2診断データ取得
+  // V2診断データ取得（career_user_diagnosisテーブルからfinal_typeでフィルタ）
   const { data: v2Data, error: v2Error } = await supabaseAdmin
-    .from("diagnoses")
+    .from("career_user_diagnosis")
     .select(
-      "session_id, satisfaction, result_type, urgency_level, updated_at"
+      "user_id, q1, simple_type, final_type, updated_at"
     )
-    .eq("app_version", "v2")
+    .like("final_type", "v2_%")
     .order("updated_at", { ascending: false })
     .limit(100)
-
-  if (v2Error) throw v2Error
 
   return (
     <div className="space-y-8">
@@ -37,27 +35,23 @@ export default async function DiagnosisList() {
           <table className="w-full text-left">
             <thead className="bg-green-100 text-xs">
               <tr>
-                <th className="p-2">SessionID</th>
-                <th className="p-2">満足度</th>
-                <th className="p-2">診断タイプ</th>
-                <th className="p-2">緊急度</th>
+                <th className="p-2">UserID</th>
+                <th className="p-2">Q1（月曜日の感情）</th>
+                <th className="p-2">簡易タイプ</th>
+                <th className="p-2">V2診断タイプ</th>
                 <th className="p-2">最終更新</th>
                 <th className="p-2">詳細</th>
               </tr>
             </thead>
             <tbody>
               {v2Data.map((row) => (
-                <tr key={row.session_id} className="border-t border-green-200 hover:bg-green-50">
-                  <td className="p-2 font-mono text-xs">{row.session_id}</td>
-                  <td className="p-2">{row.satisfaction}</td>
-                  <td className="p-2">{row.result_type}</td>
+                <tr key={row.user_id} className="border-t border-green-200 hover:bg-green-50">
+                  <td className="p-2 font-mono text-xs">{row.user_id}</td>
+                  <td className="p-2">{row.q1}</td>
+                  <td className="p-2">{row.simple_type}</td>
                   <td className="p-2">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      row.urgency_level === 'high' ? 'bg-red-100 text-red-800' :
-                      row.urgency_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {row.urgency_level}
+                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                      {row.final_type}
                     </span>
                   </td>
                   <td className="p-2">
@@ -65,7 +59,7 @@ export default async function DiagnosisList() {
                   </td>
                   <td className="p-2">
                     <Link
-                      href={`/admin/v2/${row.session_id}`}
+                      href={`/admin/v2/${row.user_id}`}
                       className="text-blue-600 hover:underline"
                     >
                       開く

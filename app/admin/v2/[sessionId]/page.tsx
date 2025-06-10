@@ -5,10 +5,10 @@ import Link from "next/link"
 
 export default async function V2DiagnosisDetail({ params }: { params: { sessionId: string } }) {
   const { data, error } = await supabaseAdmin
-    .from("diagnoses")
+    .from("career_user_diagnosis")
     .select("*")
-    .eq("session_id", params.sessionId)
-    .eq("app_version", "v2")
+    .eq("user_id", params.sessionId)
+    .like("final_type", "v2_%")
     .single()
 
   if (error) {
@@ -23,19 +23,19 @@ export default async function V2DiagnosisDetail({ params }: { params: { sessionI
     )
   }
 
-  // JSONデータの解析
-  let concerns = []
-  let priorities = []
+  // final_dataからV2固有データを取得
+  let finalData: any = {}
   let actionPlan = []
   let serviceRecommendations = []
 
   try {
-    concerns = typeof data.concerns === 'string' ? JSON.parse(data.concerns) : data.concerns || []
-    priorities = typeof data.priorities === 'string' ? JSON.parse(data.priorities) : data.priorities || []
-    actionPlan = typeof data.action_plan === 'string' ? JSON.parse(data.action_plan) : data.action_plan || []
-    serviceRecommendations = typeof data.service_recommendations === 'string' ? JSON.parse(data.service_recommendations) : data.service_recommendations || []
+    if (data.final_data) {
+      finalData = typeof data.final_data === 'string' ? JSON.parse(data.final_data) : data.final_data
+      actionPlan = finalData.actionPlan || []
+      serviceRecommendations = finalData.serviceRecommendations || []
+    }
   } catch (parseError) {
-    console.error("JSON解析エラー:", parseError)
+    console.error("final_data JSON解析エラー:", parseError)
   }
 
   return (
@@ -52,12 +52,12 @@ export default async function V2DiagnosisDetail({ params }: { params: { sessionI
         <h2 className="text-lg font-semibold mb-4">基本情報</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="font-medium text-gray-700">セッションID:</label>
-            <p className="font-mono text-sm">{data.session_id}</p>
+            <label className="font-medium text-gray-700">ユーザーID:</label>
+            <p className="font-mono text-sm">{data.user_id}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">バージョン:</label>
-            <p>{data.app_version}</p>
+            <label className="font-medium text-gray-700">診断タイプ:</label>
+            <p>{data.final_type}</p>
           </div>
           <div>
             <label className="font-medium text-gray-700">作成日時:</label>
@@ -80,78 +80,83 @@ export default async function V2DiagnosisDetail({ params }: { params: { sessionI
 
       {/* 回答データ */}
       <div className="bg-white border rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">回答データ</h2>
+        <h2 className="text-lg font-semibold mb-4">V2 パーソナル回答データ</h2>
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="font-medium text-gray-700">仕事の満足度:</label>
-            <p className="mt-1">{data.satisfaction}</p>
+            <label className="font-medium text-gray-700">Q1（月曜日の感情）:</label>
+            <p className="mt-1">{data.q1}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">転職を考え始めた時期:</label>
-            <p className="mt-1">{data.timing}</p>
+            <label className="font-medium text-gray-700">Q2（夜の思考）:</label>
+            <p className="mt-1">{data.q2}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">年代:</label>
-            <p className="mt-1">{data.demographics_age}</p>
+            <label className="font-medium text-gray-700">Q3（年代）:</label>
+            <p className="mt-1">{data.q3}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">職種:</label>
-            <p className="mt-1">{data.demographics_job}</p>
+            <label className="font-medium text-gray-700">Q4（職種）:</label>
+            <p className="mt-1">{data.q4}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">転職経験:</label>
-            <p className="mt-1">{data.experience}</p>
+            <label className="font-medium text-gray-700">Q5（お金の現実）:</label>
+            <p className="mt-1">{data.q5}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">理想の働き方:</label>
-            <p className="mt-1">{data.work_style}</p>
+            <label className="font-medium text-gray-700">Q6（転職への本音）:</label>
+            <p className="mt-1">{data.q6}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">現在の年収:</label>
-            <p className="mt-1">{data.income}</p>
+            <label className="font-medium text-gray-700">Q7（理想の働き方）:</label>
+            <p className="mt-1">{data.q7}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">性格・働き方タイプ:</label>
-            <p className="mt-1">{data.personality}</p>
+            <label className="font-medium text-gray-700">Q8（スキル自信）:</label>
+            <p className="mt-1">{data.q8}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">家族構成:</label>
-            <p className="mt-1">{data.family}</p>
+            <label className="font-medium text-gray-700">Q9（人間関係）:</label>
+            <p className="mt-1">{data.q9}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">準備状況:</label>
-            <p className="mt-1">{data.preparation}</p>
+            <label className="font-medium text-gray-700">Q10（転職覚悟）:</label>
+            <p className="mt-1">{data.q10}</p>
           </div>
         </div>
         
         <div className="mt-6 space-y-4">
-          <div>
-            <label className="font-medium text-gray-700">主なストレス要因:</label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {concerns.map((concern: string, index: number) => (
-                <span key={index} className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">
-                  {concern}
-                </span>
-              ))}
+          {/* V2固有データ表示 */}
+          {finalData.breaking_point && Array.isArray(finalData.breaking_point) && finalData.breaking_point.length > 0 && (
+            <div>
+              <label className="font-medium text-gray-700">「もう無理かも」と思った瞬間:</label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {finalData.breaking_point.map((point: string, index: number) => (
+                  <span key={index} className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                    {point}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
-          <div>
-            <label className="font-medium text-gray-700">重視する優先事項:</label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {priorities.map((priority: string, index: number) => (
-                <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  {priority}
-                </span>
-              ))}
+          {finalData.urgency && (
+            <div>
+              <label className="font-medium text-gray-700">AI分析による緊急度:</label>
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium mt-1 ${
+                finalData.urgency === 'high' ? 'bg-red-100 text-red-800' :
+                finalData.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-green-100 text-green-800'
+              }`}>
+                {finalData.urgency}
+              </span>
             </div>
-          </div>
+          )}
           
-          {data.free_text && (
+          {finalData.freeText && (
             <div>
               <label className="font-medium text-gray-700">フリーテキスト（詳細状況）:</label>
               <div className="mt-1 p-4 bg-gray-50 rounded-lg border">
-                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{data.free_text}</p>
+                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{finalData.freeText}</p>
               </div>
             </div>
           )}
@@ -164,18 +169,12 @@ export default async function V2DiagnosisDetail({ params }: { params: { sessionI
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="font-medium text-gray-700">診断タイプ:</label>
-              <p className="mt-1 text-lg font-semibold">{data.result_type}</p>
+              <label className="font-medium text-gray-700">簡易診断タイプ:</label>
+              <p className="mt-1 text-lg font-semibold">{data.simple_type}</p>
             </div>
             <div>
-              <label className="font-medium text-gray-700">緊急度:</label>
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                data.urgency_level === 'high' ? 'bg-red-100 text-red-800' :
-                data.urgency_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-green-100 text-green-800'
-              }`}>
-                {data.urgency_level}
-              </span>
+              <label className="font-medium text-gray-700">最終診断タイプ:</label>
+              <p className="mt-1 text-lg font-semibold">{data.final_type}</p>
             </div>
           </div>
           
