@@ -58,11 +58,25 @@ export default async function DiagnosisList() {
   // サービスクリック統計を集計
   const serviceClickStats: Record<string, ServiceClickStats> = {}
   
-  allData?.forEach(row => {
+  console.log("クリック統計集計開始")
+  console.log("処理対象データ数:", allData?.length || 0)
+  
+  allData?.forEach((row, index) => {
+    console.log(`データ${index + 1}:`, {
+      user_id: row.user_id,
+      version_type: row.version_type,
+      clicked_services: row.clicked_services,
+      clicked_services_type: typeof row.clicked_services,
+      clicked_services_length: Array.isArray(row.clicked_services) ? row.clicked_services.length : 'not array'
+    })
+    
     // clicked_servicesカラムが存在し、かつ配列である場合のみ処理
     if (row.clicked_services && Array.isArray(row.clicked_services)) {
+      console.log(`データ${index + 1}のクリック履歴を処理:`, row.clicked_services)
+      
       row.clicked_services.forEach((service: any) => {
         const serviceName = service.name || 'Unknown Service'
+        console.log('サービス処理中:', serviceName)
         
         if (!serviceClickStats[serviceName]) {
           serviceClickStats[serviceName] = {
@@ -80,8 +94,16 @@ export default async function DiagnosisList() {
           serviceClickStats[serviceName].latest_click = row.updated_at
         }
       })
+    } else {
+      console.log(`データ${index + 1}: クリック履歴なしまたは無効`, {
+        clicked_services: row.clicked_services,
+        type: typeof row.clicked_services
+      })
     }
   })
+  
+  console.log("集計結果:", serviceClickStats)
+  console.log("集計されたサービス数:", Object.keys(serviceClickStats).length)
 
   // クリック数順でソート
   const sortedServiceStats = Object.values(serviceClickStats)
@@ -90,6 +112,8 @@ export default async function DiagnosisList() {
   console.log("全データ件数:", allData?.length || 0)
   console.log("V1データ件数:", v1Data?.length || 0)
   console.log("V2データ件数:", v2Data?.length || 0)
+  console.log("V2データの詳細:", v2Data)
+  console.log("全データのversion_type:", allData?.map(d => ({ id: d.user_id, version_type: d.version_type, final_type: d.final_type })))
   console.log("全データのversion_type一覧:", allData?.map(row => `${row.user_id}: ${row.version_type}`))
   console.log("V2データサンプル:", v2Data?.[0])
   console.log("最新3件のデータ詳細:", allData?.slice(0, 3).map(row => ({

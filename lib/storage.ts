@@ -80,11 +80,10 @@ export function addClickedService(service: {
 
 // 日本時間（JST）のタイムスタンプを取得する関数
 export const getJSTTimestamp = (): string => {
-  const now = new Date()
-  // 日本時間（UTC+9）に変換
-  const jstOffset = 9 * 60 * 60 * 1000 // 9時間をミリ秒に変換
-  const jstDate = new Date(now.getTime() + jstOffset)
-  return jstDate.toISOString()
+  // PostgreSQLのtimestamptz型は自動的にUTCで保存されるため
+  // シンプルにUTCタイムスタンプを返す
+  // 表示時にクライアント側でタイムゾーン変換を行う
+  return new Date().toISOString()
 }
 
 /* --- 2. saveSession を簡潔に -------------------- */
