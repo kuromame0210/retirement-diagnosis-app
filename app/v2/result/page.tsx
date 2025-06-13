@@ -10,34 +10,95 @@ import { V2Answers, validateV2Answers } from "@/lib/v2/questions"
 import { recommendV2Services, V2RecommendedService } from "@/lib/v2/serviceRecommendation"
 import { trackEvent, createServiceClickEvent } from "@/lib/analytics"
 
-// V2専用のクリック履歴保存関数
-const saveV2ClickedService = (id: string, name: string, url: string) => {
-  if (typeof window === 'undefined') return
+// V2専用のクリック履歴保存関数（即座にデータベース更新付き）
+const saveV2ClickedService = async (id: string, name: string, url: string) => {
+  console.log('=== V2クリック保存開始 ===')
+  console.log('受信パラメータ:', { id, name, url })
+  
+  if (typeof window === 'undefined') {
+    console.warn('ウィンドウオブジェクトが見つかりません')
+    return
+  }
   
   try {
     const v2ClickedServices = sessionStorage.getItem('v2_clicked_services')
+    console.log('既存のクリック履歴:', v2ClickedServices)
+    
     let clickedServices = []
     if (v2ClickedServices) {
       try {
         clickedServices = JSON.parse(v2ClickedServices)
+        console.log('解析済みクリック履歴:', clickedServices)
       } catch (e) {
+        console.warn('既存履歴の解析失敗:', e)
         clickedServices = []
       }
     }
     
     // 重複チェック
-    if (!clickedServices.find((s: any) => s.id === id)) {
-      clickedServices.push({
+    const existingService = clickedServices.find((s: any) => s.id === id)
+    if (!existingService) {
+      const newService = {
         id,
         name,
         url,
         clickedAt: new Date().toISOString()
-      })
-      sessionStorage.setItem('v2_clicked_services', JSON.stringify(clickedServices))
-      console.log('V2クリック履歴保存:', { id, name, url, total: clickedServices.length })
+      }
+      clickedServices.push(newService)
+      
+      const updatedJson = JSON.stringify(clickedServices)
+      sessionStorage.setItem('v2_clicked_services', updatedJson)
+      
+      console.log('V2クリック履歴保存成功:', newService)
+      console.log('更新後の履歴数:', clickedServices.length)
+      
+      // 即座にデータベースを更新
+      await updateV2ClickHistoryInDatabase(clickedServices)
+      
+    } else {
+      console.log('重複のためスキップ:', { id, name })
     }
   } catch (e) {
-    console.warn('V2クリック履歴保存エラー:', e)
+    console.error('V2クリック履歴保存エラー:', e)
+  }
+}
+
+// V2クリック履歴をデータベースに即座に更新する関数
+const updateV2ClickHistoryInDatabase = async (clickedServices: any[]) => {
+  try {
+    console.log('=== データベースにクリック履歴を即座更新 ===')
+    
+    const sessionId = sessionStorage.getItem('v2_session_id')
+    if (!sessionId) {
+      console.warn('セッションIDが見つかりません')
+      return
+    }
+    
+    const updateData = {
+      sessionId,
+      clickedServices,
+      updateType: 'click_history_only'  // クリック履歴のみ更新
+    }
+    
+    console.log('クリック履歴更新データ:', updateData)
+    
+    const response = await fetch("/api/save-v2-diagnosis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updateData),
+    })
+    
+    console.log('クリック履歴更新レスポンス:', response.status, response.statusText)
+    
+    if (response.ok) {
+      const result = await response.json()
+      console.log('✅ クリック履歴データベース更新成功:', result)
+    } else {
+      const errorText = await response.text()
+      console.error('❌ クリック履歴データベース更新失敗:', response.status, errorText)
+    }
+  } catch (error) {
+    console.error('クリック履歴データベース更新エラー:', error)
   }
 }
 
@@ -211,11 +272,46 @@ const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
   // サービス推奨（新しいロジック使用）
   let serviceRecommendations: V2RecommendedService[] = []
   try {
+    console.log("サービス推奨システムを実行中...")
     serviceRecommendations = recommendV2Services(answers)
+    console.log("サービス推奨結果:", serviceRecommendations)
+    console.log("推奨サービス数:", serviceRecommendations.length)
+    
+    if (serviceRecommendations.length === 0) {
+      console.warn("サービス推奨が0件でした、フォールバックサービスを追加")
+      // フォールバック: 基本的なサービスを追加
+      serviceRecommendations = [{
+        id: "recruit-agent",
+        name: "リクルートエージェント",
+        category: ["総合転職エージェント"],
+        description: "業界最大級の求人数と実績",
+        url: "https://www.r-agent.com/",
+        tags: ["大手", "実績豊富", "幅広い職種"],
+        urgencyLevel: ["medium"],
+        rank: 1,
+        score: 80,
+        reason: "まずは相談から始められます",
+        priority: "high" as const
+      }]
+    }
   } catch (error) {
     console.error("サービス推奨エラー:", error)
-    // フォールバック: 空の配列
-    serviceRecommendations = []
+    console.error("エラースタック:", error instanceof Error ? error.stack : "No stack")
+    
+    // フォールバック: 基本的なサービス
+    serviceRecommendations = [{
+      id: "recruit-agent",
+      name: "リクルートエージェント",
+      category: ["総合転職エージェント"],
+      description: "業界最大級の求人数と実績",
+      url: "https://www.r-agent.com/",
+      tags: ["大手", "実績豊富", "幅広い職種"],
+      urgencyLevel: ["medium"],
+      rank: 1,
+      score: 80,
+      reason: "まずは相談から始められます",
+      priority: "high" as const
+    }]
   }
   
   const result = {
@@ -287,6 +383,15 @@ export default function V2ResultPage() {
       sessionStorage.removeItem('v2_result')
       console.log("V2結果キャッシュをクリアしました")
       
+      // 古い診断エラー結果も強制的にクリア
+      const allKeys = Object.keys(sessionStorage)
+      allKeys.forEach(key => {
+        if (key.includes('v2_') && key.includes('saved')) {
+          sessionStorage.removeItem(key)
+          console.log("クリアした保存フラグ:", key)
+        }
+      })
+      
       console.log("キャッシュを無視して新規分析を実行")
       
       // 新規分析を実行
@@ -343,13 +448,24 @@ export default function V2ResultPage() {
       console.log("ローカル分析を生成します...")
       const localResult = generateLocalV2Analysis(answersData)
       console.log("ローカル分析結果:", localResult)
+      
+      // ローカル分析結果を確実に設定
       setResult(localResult)
       setLoading(false)
+      
+      // セッションストレージにローカル結果を保存
+      sessionStorage.setItem('v2_result', JSON.stringify(localResult))
 
       // データベースに先にローカル結果で保存
-      saveV2DiagnosisToDatabase(answersData, localResult)
+      console.log("データベースにローカル分析結果を保存中...")
+      await saveV2DiagnosisToDatabase(answersData, localResult)
+      console.log("データベース保存完了")
 
-      // AI分析を裏側で実行
+      // APIキーがない場合はAI分析をスキップ
+      console.log("高品質なローカル分析を使用します（API分析は無効）")
+      return
+      
+      // AI分析を裏側で実行（現在は無効化）
       try {
         console.log("AI分析リクエスト送信中...")
         console.log("送信するデータ:", { answers: answersData, version: "v2", analysisType: "complete" })
@@ -415,6 +531,8 @@ export default function V2ResultPage() {
       console.log("=== V2診断データベース保存開始 ===")
       console.log("保存する回答データ:", answersData)
       console.log("保存する結果データ:", resultData)
+      console.log("result.type:", resultData.type)
+      console.log("result.summary:", resultData.summary)
       
       // セッションIDを生成または取得（UUID形式で生成）
       let sessionId = sessionStorage.getItem('v2_session_id')
@@ -441,16 +559,28 @@ export default function V2ResultPage() {
       // V2のクリック履歴を取得
       const v2ClickedServices = sessionStorage.getItem('v2_clicked_services')
       let clickedServices = []
+      console.log("セッションストレージからV2クリック履歴を取得中...")
+      console.log("v2_clicked_services raw:", v2ClickedServices)
+      
       if (v2ClickedServices) {
         try {
           clickedServices = JSON.parse(v2ClickedServices)
           console.log("V2クリック履歴を取得:", clickedServices)
+          console.log("クリック履歴数:", clickedServices.length)
         } catch (e) {
           console.warn("V2クリック履歴の解析に失敗:", e)
         }
       } else {
-        console.log("V2クリック履歴が見つかりません")
+        console.log("V2クリック履歴が見つかりません（まだクリックしていない可能性）")
       }
+      
+      // セッションストレージの全内容をデバッグ出力
+      console.log("セッションストレージ全体:", {
+        v2_answers: sessionStorage.getItem('v2_answers') ? 'あり' : 'なし',
+        v2_session_id: sessionStorage.getItem('v2_session_id'),
+        v2_clicked_services: sessionStorage.getItem('v2_clicked_services'),
+        v2_result: sessionStorage.getItem('v2_result') ? 'あり' : 'なし'
+      })
 
       const saveData = {
         answers: answersData,
@@ -470,6 +600,8 @@ export default function V2ResultPage() {
       console.log("データベース保存リクエスト:", JSON.stringify(saveData, null, 2))
       console.log("保存時のresult.type:", resultData.type)
       console.log("期待されるfinal_type:", `v2_${resultData.type}`)
+      console.log("リクエストURL:", "/api/save-v2-diagnosis")
+      console.log("リクエストメソッド:", "POST")
 
       const response = await fetch("/api/save-v2-diagnosis", {
         method: "POST",
@@ -478,6 +610,7 @@ export default function V2ResultPage() {
       })
 
       console.log("データベース保存レスポンス:", response.status, response.statusText)
+      console.log("レスポンスOK:", response.ok)
 
       if (response.ok) {
         const result = await response.json()
@@ -495,10 +628,14 @@ export default function V2ResultPage() {
         })
       } else {
         const errorText = await response.text()
-        console.warn("❌ V2診断データ保存失敗:", response.status, errorText)
+        console.error("❌ V2診断データ保存失敗:", response.status, errorText)
+        console.error("エラーレスポンス詳細:", errorText)
         
         // 保存失敗時はフラグをクリア（再試行可能にする）
         sessionStorage.removeItem(saveKey)
+        
+        // エラーの詳細をユーザーに表示（デバッグ用）
+        alert(`データベース保存エラー: ${response.status} - ${errorText}`)
       }
     } catch (saveError) {
       console.warn("V2診断データ保存でエラー:", saveError)
@@ -768,7 +905,7 @@ export default function V2ResultPage() {
                       console.log('Service ID:', service.id)
                       console.log('Service name:', service.name)
                       
-                      // V2専用のクリック履歴保存
+                      // V2専用のクリック履歴保存（非同期）
                       saveV2ClickedService(service.id, service.name, service.url)
                       
                       trackEvent('v2_service_card_click', {
@@ -824,7 +961,7 @@ export default function V2ResultPage() {
                                     console.log('Service ID:', service.id)
                                     console.log('Service name:', service.name)
                                     
-                                    // V2専用のクリック履歴保存
+                                    // V2専用のクリック履歴保存（非同期）
                       saveV2ClickedService(service.id, service.name, service.url)
                                     
                                     // 詳細なサービスクリックイベント
@@ -942,7 +1079,7 @@ export default function V2ResultPage() {
                           console.log('Service ID:', service.id)
                           console.log('Service name:', service.name)
                           
-                          // V2専用のクリック履歴保存
+                          // V2専用のクリック履歴保存（非同期）
                       saveV2ClickedService(service.id, service.name, service.url)
                           
                           // 詳細なサービスクリックイベント

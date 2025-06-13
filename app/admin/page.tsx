@@ -30,6 +30,8 @@ export default async function DiagnosisList() {
     if (error) {
       // clicked_servicesカラムが存在しない場合は、カラムなしで再試行
       console.warn("clicked_servicesカラムが存在しません:", error.message)
+      console.warn("エラーコード:", error.code)
+      console.warn("エラー詳細:", error.details)
       const { data: fallbackData, error: fallbackError } = await supabaseAdmin
         .from("career_user_diagnosis")
         .select(

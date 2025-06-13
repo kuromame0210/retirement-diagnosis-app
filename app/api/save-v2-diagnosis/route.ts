@@ -5,11 +5,49 @@ import { getJSTTimestamp } from "@/lib/storage"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { answers, result, sessionId, userAgent, prefecture, isInitialSave } = body
+    const { answers, result, sessionId, userAgent, prefecture, isInitialSave, clickedServices, updateType } = body
 
     console.log("=== V2診断保存API開始 ===")
-    console.log("Received data:", { answers, result, sessionId, isInitialSave })
+    console.log("Received data:", { answers, result, sessionId, isInitialSave, updateType })
     console.log("Request body keys:", Object.keys(body))
+    
+    // クリック履歴のみの更新の場合
+    if (updateType === 'click_history_only') {
+      console.log("クリック履歴のみの更新を実行")
+      
+      if (!sessionId || !clickedServices) {
+        console.error("❌ クリック履歴更新に必要なデータが不足:", { sessionId: !!sessionId, clickedServices: !!clickedServices })
+        return NextResponse.json(
+          { error: "セッションIDまたはクリック履歴が不足しています" },
+          { status: 400 }
+        )
+      }
+      
+      // クリック履歴のみを更新
+      const timestamp = getJSTTimestamp()
+      const { error: updateError } = await supabaseAdmin
+        .from("career_user_diagnosis")
+        .update({
+          clicked_services: clickedServices,
+          updated_at: timestamp,
+        })
+        .eq("user_id", sessionId)
+      
+      if (updateError) {
+        console.error("❌ クリック履歴更新エラー:", updateError)
+        return NextResponse.json(
+          { error: "クリック履歴更新に失敗しました", details: updateError.message },
+          { status: 500 }
+        )
+      }
+      
+      console.log("✅ クリック履歴更新成功")
+      return NextResponse.json({ 
+        success: true, 
+        id: sessionId,
+        message: "クリック履歴を更新しました"
+      })
+    }
 
     // 必須データの検証
     if (!answers || !result || !sessionId) {
