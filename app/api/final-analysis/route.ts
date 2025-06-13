@@ -6,6 +6,8 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
+console.log("Anthropic API key configured:", !!process.env.ANTHROPIC_API_KEY)
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -14,6 +16,7 @@ export async function POST(request: NextRequest) {
     // v2診断の場合
     if (version === "v2" && answers) {
       console.log("V2 AI分析開始 - 新しい質問構造対応")
+      console.log("受信したV2回答データ:", JSON.stringify(answers, null, 2))
       
       // サービス推奨システムを使用してパーソナライズされた推奨を生成
       let smartRecommendations = []
@@ -166,6 +169,9 @@ ${JSON.stringify(previousAnalysis)}
     return NextResponse.json({ result })
   } catch (error) {
     console.error("Final analysis error:", error)
+    console.error("Error type:", typeof error)
+    console.error("Error message:", error instanceof Error ? error.message : String(error))
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace")
     
     // エラー時のフォールバック結果
     const fallbackResult = {

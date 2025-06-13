@@ -60,6 +60,10 @@ const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
     throw new Error("満足度の回答が見つかりません")
   }
   
+  console.log("satisfaction値:", answers.satisfaction)
+  console.log("money_reality値:", answers.money_reality)
+  console.log("breaking_point値:", answers.breaking_point)
+  
   let type = "検討型"
   let urgency: "high" | "medium" | "low" = "medium"
   let summary = ""
@@ -77,12 +81,16 @@ const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
     summary = "職場に向かう足取りが重いのは、あなたの本能が「この環境は自分に合わない」と教えてくれているサインです。まだ耐えられる範囲かもしれませんが、このまま放置すると確実に悪化します。今が動くべきタイミングです。"
   } else if (answers.satisfaction === "neutral") {
     type = "様子見型"
-    urgency = "low"
+    urgency = "low"  
     summary = "現状に特別な不満はないものの、「このままでいいのか？」という漠然とした不安があるのではないでしょうか。安定は得られているが、成長や充実感に欠けている状態です。人生は一度きり。もっと充実した働き方を探す価値があります。"
-  } else {
-    type = "成長型"
+  } else if (answers.satisfaction === "excited") {
+    type = "成長志向型"
     urgency = "low"
-    summary = "仕事に対してポジティブな感情を持てているのは素晴らしいことです。ただし、現状に満足しすぎて成長が止まってしまうリスクもあります。より大きな挑戦や責任のある環境で、さらなる飛躍を目指すタイミングかもしれません。"
+    summary = "仕事に対してポジティブな感情を持てているのは素晴らしいことです。しかし、夜に「逃げ出したい」と考えているということは、表面的には満足していても内面では葛藤があるようですね。より本質的な満足を求めて動き出すタイミングかもしれません。"
+  } else {
+    type = "検討型"
+    urgency = "medium"
+    summary = "現在の状況について複雑な感情をお持ちのようですね。一概には言えませんが、転職を考える時期に来ているのかもしれません。"
   }
   
   // 夜の思考パターンによる緊急度調整
@@ -107,19 +115,33 @@ const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
     criticalActions.push("有害な職場環境から90日以内に転職する")
   }
   
-  // 経済状況に応じた戦略
+  // 経済状況と夜の思考を組み合わせた詳細なアドバイス生成
   if (answers.money_reality === "barely_survive" || answers.money_reality === "no_luxury") {
-    advice = "率直に言います。あなたは経済的にも精神的にも追い詰められています。転職活動は「年収アップ」を絶対条件にして進めてください。今の給与では人生設計ができません。"
+    if (answers.night_thoughts === "escape_thoughts") {
+      advice = "経済的に厳しい中で「逃げ出したい」と考えているあなたの状況は本当に辛いものです。でも諦める必要はありません。転職活動では「年収アップ」を絶対条件にして、生活を立て直しましょう。今の環境では心身ともに消耗するだけです。"
+    } else {
+      advice = "経済的な制約がある中でも、転職によって状況を改善できる可能性は十分にあります。年収アップを最優先に、計画的に行動していきましょう。"
+    }
     if (criticalActions.length < 3) {
       criticalActions.push("年収を最低20%上げる転職先のみに応募する")
     }
   } else if (answers.money_reality === "comfortable" || answers.money_reality === "wealthy") {
-    advice = "経済面での余裕があるあなたには、お金以上に大切なものを追求する権利があります。「やりがい」「成長」「働き方」を妥協せず、理想の環境を求めて動くべきです。"
+    if (answers.night_thoughts === "escape_thoughts") {
+      advice = "経済的な余裕があるのに「逃げ出したい」と感じているということは、お金以外の深刻な問題があります。働き方、人間関係、やりがいなど、本質的な満足を追求する時期です。妥協する必要はありません。"
+    } else if (answers.night_thoughts === "better_life") {
+      advice = "経済的安定があるあなたには、より高い次元での充実を求める権利があります。「もっと良い人生」を実現するため、理想的な働き方を追求していきましょう。"
+    } else {
+      advice = "経済面での余裕があるあなたには、お金以上に大切なものを追求する権利があります。「やりがい」「成長」「働き方」を妥協せず、理想の環境を求めて動くべきです。"
+    }
     if (criticalActions.length < 3) {
       criticalActions.push("企業文化と価値観の適合性を最重要視する")
     }
   } else {
-    advice = "現在の状況を冷静に分析すると、変化が必要な時期に来ています。現状維持は実質的な後退です。積極的に行動を起こしましょう。"
+    if (answers.night_thoughts === "tomorrow_work") {
+      advice = "明日の仕事のことで頭がいっぱいになってしまう状況は、明らかにワークライフバランスが崩れています。現状維持は実質的な後退です。積極的に変化を起こしていきましょう。"
+    } else {
+      advice = "現在の状況を冷静に分析すると、変化が必要な時期に来ています。現状維持は実質的な後退です。積極的に行動を起こしましょう。"
+    }
   }
   
   // 転職活動の準備状況に基づく具体的アクション
@@ -157,6 +179,32 @@ const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
     }
   }
   
+  // フリーテキストがある場合は、より具体的なアドバイスを追加
+  if (answers.freeText && answers.freeText.trim().length > 10) {
+    console.log("フリーテキストあり、具体的アドバイスを強化:", answers.freeText)
+    
+    // フリーテキストの内容に基づいて追加アドバイス
+    const freeTextLower = answers.freeText.toLowerCase()
+    if (freeTextLower.includes("上司") || freeTextLower.includes("パワハラ") || freeTextLower.includes("理不尽")) {
+      if (!criticalActions.some(action => action.includes("人間関係"))) {
+        criticalActions.push("人間関係の問題について労働相談窓口に相談する")
+      }
+    }
+    if (freeTextLower.includes("残業") || freeTextLower.includes("長時間") || freeTextLower.includes("休日出勤")) {
+      if (!criticalActions.some(action => action.includes("労働時間"))) {
+        criticalActions.push("労働時間の改善を求めるか転職活動を本格化する")
+      }
+    }
+    if (freeTextLower.includes("給料") || freeTextLower.includes("年収") || freeTextLower.includes("お金")) {
+      if (!criticalActions.some(action => action.includes("年収"))) {
+        criticalActions.push("市場価値を調査して適正年収での転職を目指す")
+      }
+    }
+    
+    // アドバイスにも個別の状況を反映
+    advice += ` あなたが詳しく書いてくださった状況を拝見すると、個別の課題に対しても具体的な対策が必要ですね。一人で抱え込まず、専門家のサポートを受けることをお勧めします。`
+  }
+  
   // 最終的に3つに絞る
   actionPlan = criticalActions.slice(0, 3)
   
@@ -170,7 +218,7 @@ const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
     serviceRecommendations = []
   }
   
-  return {
+  const result = {
     type,
     urgency,
     summary,
@@ -178,6 +226,12 @@ const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
     actionPlan,
     serviceRecommendations
   }
+  
+  console.log("ローカル分析完了:", result)
+  console.log("生成されたtype:", type)
+  console.log("生成されたsummary:", summary)
+  
+  return result
 }
 
 export default function V2ResultPage() {
@@ -229,19 +283,9 @@ export default function V2ResultPage() {
         setAnswers(parsedAnswers)
       }
       
-      // 既存の結果があるかチェック（一時的に無効化してテスト）
-      // const existingResultStr = sessionStorage.getItem('v2_result')
-      // if (existingResultStr) {
-      //   try {
-      //     const existingResult = JSON.parse(existingResultStr) as V2DiagnosisResult
-      //     console.log("既存のV2結果を使用:", existingResult)
-      //     setResult(existingResult)
-      //     setLoading(false)
-      //     return
-      //   } catch {
-      //     console.log("既存結果の解析に失敗、新規分析を実行")
-      //   }
-      // }
+      // セッションストレージのキャッシュをクリアしてテスト
+      sessionStorage.removeItem('v2_result')
+      console.log("V2結果キャッシュをクリアしました")
       
       console.log("キャッシュを無視して新規分析を実行")
       
@@ -296,7 +340,9 @@ export default function V2ResultPage() {
       console.log("分析対象のanswers:", JSON.stringify(answersData, null, 2))
 
       // まずローカル分析を生成（即座に表示用）
+      console.log("ローカル分析を生成します...")
       const localResult = generateLocalV2Analysis(answersData)
+      console.log("ローカル分析結果:", localResult)
       setResult(localResult)
       setLoading(false)
 
@@ -306,6 +352,8 @@ export default function V2ResultPage() {
       // AI分析を裏側で実行
       try {
         console.log("AI分析リクエスト送信中...")
+        console.log("送信するデータ:", { answers: answersData, version: "v2", analysisType: "complete" })
+        
         const response = await fetch("/api/final-analysis", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -321,9 +369,11 @@ export default function V2ResultPage() {
         if (response.ok) {
           const aiResult = await response.json()
           console.log("V2 AI分析成功:", aiResult)
+          console.log("AI結果のtype:", aiResult?.result?.type)
           
           // AI結果で更新（エラー結果でない場合のみ）
           if (aiResult && aiResult.result && aiResult.result.type !== "診断エラー") {
+            console.log("AI分析結果を適用します")
             setResult(aiResult.result)
             
             // セッションストレージに保存
@@ -334,15 +384,23 @@ export default function V2ResultPage() {
             
             console.log("V2 AI分析完了、結果を更新しました")
           } else {
-            console.warn("AI結果がエラーまたは不正な形式です:", aiResult)
-            console.log("ローカル分析結果を維持します")
+            console.warn("AI結果がエラー（おそらくAPIキー上限）:", aiResult)
+            console.log("高品質なローカル分析結果を維持します:", localResult)
+            // ローカル分析結果はそのまま使用（既にsetResultされている）
           }
         } else {
           const errorText = await response.text()
           console.warn("V2 AI分析失敗:", response.status, errorText)
+          console.log("ローカル分析結果を維持します")
+          
+          // API制限の場合の説明を追加
+          if (response.status === 401 || response.status === 429) {
+            console.log("API制限のため高品質ローカル分析を使用")
+          }
         }
       } catch (aiError) {
         console.warn("V2 AI分析でエラー:", aiError)
+        console.log("ローカル分析結果を維持します")
       }
 
     } catch (err) {
