@@ -64,6 +64,9 @@ function mapSessionToRow(s: any) {
       return acc
     }, {}),
 
+    /* クリック履歴をJSONとしても保存 */
+    clicked_services: s.clickedServices || [],
+
     /* 簡易診断 */
     simple_type:    s.simpleResult?.type,
     simple_urgency: s.simpleResult?.urgency,
@@ -129,6 +132,8 @@ export async function POST(req: NextRequest) {
         current_step: session.currentStep,
         version_type: 'v1', // v1診断として明示
         updated_at: session.updatedAt, // セッションのタイムスタンプをそのまま使用
+        // クリックしたサービス履歴を更新
+        clicked_services: session.clickedServices || [],
         // 診断結果がある場合のみ更新
         ...(session.simpleResult && {
           simple_type: session.simpleResult.type,

@@ -53,6 +53,9 @@ export async function POST(request: Request) {
           q5: answers.money_reality || "",
         }),
         
+        // クリックしたサービス履歴を保存
+        clicked_services: body.clickedServices || [],
+        
         updated_at: timestamp,
       }
       
@@ -100,6 +103,9 @@ export async function POST(request: Request) {
       simple_summary: result.summary || null,
       simple_advice: result.advice || null,
       final_type: result.type ? `v2_${result.type}` : null,
+      
+      // クリックしたサービス履歴
+      clicked_services: body.clickedServices || [],
       
       // メタデータ（user_agentカラムは存在しないため削除）
       created_at: timestamp,

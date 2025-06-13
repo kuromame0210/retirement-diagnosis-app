@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Star, ThumbsUp } from "lucide-react"
 import { RecommendedService } from "@/lib/services"
-import { trackEvent } from "@/lib/analytics"
+import { trackEvent, createServiceClickEvent } from "@/lib/analytics"
 import { addClickedService } from "@/lib/storage"
 import { useState } from "react"
 
@@ -111,7 +111,20 @@ export default function ServiceRecommendations({ services }: ServiceRecommendati
                         console.log('Service name:', service.name)
                         
                         addClickedService({ id: service.id, name: service.name, url: service.url })
-                        trackEvent('service_title_click', {
+                        
+                        // 詳細なサービスクリックイベント
+                        const detailedEvent = createServiceClickEvent(service.id, service.name, 'v1')
+                        trackEvent(detailedEvent, {
+                          button_location: 'final_diagnosis_page',
+                          service_name: service.name,
+                          service_id: service.id,
+                          service_rank: index + 1,
+                          click_type: 'title_click',
+                          event_type: 'final_page_service_click'
+                        })
+                        
+                        // 従来のイベントも送信（互換性のため）
+                        trackEvent('サービスタイトルクリック', {
                           button_location: 'final_diagnosis_page',
                           service_name: service.name,
                           service_id: service.id,
@@ -184,7 +197,23 @@ export default function ServiceRecommendations({ services }: ServiceRecommendati
                     console.log('Service name:', service.name)
                     
                     addClickedService({ id: service.id, name: service.name, url: service.url })
-                    trackEvent('service_detail_click', {
+                    
+                    // 詳細なサービスクリックイベント
+                    const detailedEvent = createServiceClickEvent(service.id, service.name, 'v1')
+                    trackEvent(detailedEvent, {
+                      button_location: 'final_diagnosis_page',
+                      service_name: service.name,
+                      service_id: service.id,
+                      service_rank: index + 1,
+                      button_text: index === 0 ? '🚀 今すぐ詳細をチェック！' : '✨ 詳細を確認する',
+                      click_position: index + 1,
+                      is_top_recommendation: index === 0,
+                      click_type: 'button_click',
+                      event_type: 'final_page_service_click'
+                    })
+                    
+                    // 従来のイベントも送信（互換性のため）
+                    trackEvent('サービス詳細クリック', {
                       button_location: 'final_diagnosis_page',
                       service_name: service.name,
                       service_id: service.id,

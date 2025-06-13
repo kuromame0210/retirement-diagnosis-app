@@ -98,7 +98,7 @@ export const saveSession = (patch: Partial<DiagnosisSession>) => {
     updatedAt: getJSTTimestamp(),
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  // syncSessionToServer(updated).catch(console.warn)
+  syncSessionToServer().catch(console.warn)
 }
 
 export const getSession = (): DiagnosisSession => {

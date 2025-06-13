@@ -2,14 +2,43 @@ export const dynamic = 'force-dynamic'
 
 import { supabaseAdmin } from "@/lib/supabase"
 import Link from "next/link"
+import { ExternalLink } from "lucide-react"
 
 export default async function V2DiagnosisDetail({ params }: { params: { sessionId: string } }) {
-  const { data, error } = await supabaseAdmin
-    .from("career_user_diagnosis")
-    .select("*")
-    .eq("user_id", params.sessionId)
-    .like("final_type", "v2_%")
-    .single()
+  let data: any = null
+  let error: any = null
+  
+  try {
+    // まずclicked_servicesカラムありで試行
+    const { data: fullData, error: fullError } = await supabaseAdmin
+      .from("career_user_diagnosis")
+      .select("*")
+      .eq("user_id", params.sessionId)
+      .like("final_type", "v2_%")
+      .single()
+    
+    if (fullError) {
+      // clicked_servicesカラムエラーの場合は、基本カラムのみで再試行
+      if (fullError.code === "42703") {
+        console.warn("clicked_servicesカラムが存在しません、基本カラムのみで取得します")
+        const { data: basicData, error: basicError } = await supabaseAdmin
+          .from("career_user_diagnosis")
+          .select("user_id, q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, simple_type, final_type, simple_summary, simple_advice, created_at, updated_at, prefecture, user_agent, version_type")
+          .eq("user_id", params.sessionId)
+          .like("final_type", "v2_%")
+          .single()
+        
+        if (basicError) throw basicError
+        data = basicData
+      } else {
+        throw fullError
+      }
+    } else {
+      data = fullData
+    }
+  } catch (e) {
+    error = e
+  }
 
   if (error) {
     return (
@@ -198,6 +227,59 @@ export default async function V2DiagnosisDetail({ params }: { params: { sessionI
             </div>
           )}
         </div>
+      </div>
+
+      {/* クリックしたサービス情報 */}
+      <div className="bg-white border rounded-lg p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">🔗</span>
+          クリックしたサービス
+        </h2>
+        {data.clicked_services && Array.isArray(data.clicked_services) && data.clicked_services.length > 0 ? (
+          <>
+            <div className="space-y-3">
+              {data.clicked_services.map((service: any, index: number) => (
+                <div key={index} className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <h3 className="font-semibold text-purple-900">{service.name || 'Unknown Service'}</h3>
+                        <p className="text-xs text-purple-600">ID: {service.id || 'N/A'}</p>
+                      </div>
+                    </div>
+                    {service.url && (
+                      <a
+                        href={service.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-xs flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        開く
+                      </a>
+                    )}
+                  </div>
+                  {service.url && (
+                    <p className="text-xs text-gray-600 break-all mt-2">
+                      URL: {service.url}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-xs text-gray-600">
+              ※ ユーザーが診断結果ページでクリックしたサービス一覧
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>クリックしたサービスはありません</p>
+            <p className="text-xs mt-1">ユーザーがサービスをクリックした場合、ここに表示されます</p>
+          </div>
+        )}
       </div>
 
       {/* サービス推奨 */}

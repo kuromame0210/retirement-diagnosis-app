@@ -8,7 +8,38 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, ArrowRight, AlertTriangle, CheckCircle, Clock, Sparkles, Brain, Target, ExternalLink, Star, DollarSign, MessageCircle } from "lucide-react"
 import { V2Answers, validateV2Answers } from "@/lib/v2/questions"
 import { recommendV2Services, V2RecommendedService } from "@/lib/v2/serviceRecommendation"
-import { trackEvent } from "@/lib/analytics"
+import { trackEvent, createServiceClickEvent } from "@/lib/analytics"
+
+// V2専用のクリック履歴保存関数
+const saveV2ClickedService = (id: string, name: string, url: string) => {
+  if (typeof window === 'undefined') return
+  
+  try {
+    const v2ClickedServices = sessionStorage.getItem('v2_clicked_services')
+    let clickedServices = []
+    if (v2ClickedServices) {
+      try {
+        clickedServices = JSON.parse(v2ClickedServices)
+      } catch (e) {
+        clickedServices = []
+      }
+    }
+    
+    // 重複チェック
+    if (!clickedServices.find((s: any) => s.id === id)) {
+      clickedServices.push({
+        id,
+        name,
+        url,
+        clickedAt: new Date().toISOString()
+      })
+      sessionStorage.setItem('v2_clicked_services', JSON.stringify(clickedServices))
+      console.log('V2クリック履歴保存:', { id, name, url, total: clickedServices.length })
+    }
+  } catch (e) {
+    console.warn('V2クリック履歴保存エラー:', e)
+  }
+}
 
 interface V2DiagnosisResult {
   type: string
@@ -22,6 +53,12 @@ interface V2DiagnosisResult {
 // ローカル分析関数（AI API失敗時のフォールバック）
 const generateLocalV2Analysis = (answers: V2Answers): V2DiagnosisResult => {
   console.log("V2ローカル分析を生成中:", answers)
+  
+  // 必要な回答が欠けている場合のエラーハンドリング
+  if (!answers.satisfaction) {
+    console.error("satisfaction が見つかりません:", answers)
+    throw new Error("満足度の回答が見つかりません")
+  }
   
   let type = "検討型"
   let urgency: "high" | "medium" | "low" = "medium"
@@ -154,13 +191,18 @@ export default function V2ResultPage() {
   useEffect(() => {
     console.log("=== V2結果ページ - セッションデータ確認 ===")
     
+    // React StrictModeでの重複実行を防ぐためのフラグ
+    let isEffectActive = true
+    
     // セッションストレージから回答を取得
     const v2AnswersStr = sessionStorage.getItem('v2_answers')
     
     if (!v2AnswersStr) {
       console.error("❌ V2回答データが見つかりません")
-      setError("診断データが見つかりません。最初からやり直してください。")
-      setLoading(false)
+      if (isEffectActive) {
+        setError("診断データが見つかりません。最初からやり直してください。")
+        setLoading(false)
+      }
       return
     }
     
@@ -174,14 +216,18 @@ export default function V2ResultPage() {
         console.error("❌ V2回答データが不完全です")
         console.error("不完全なデータ:", parsedAnswers)
         console.error("必要なフィールド:", Object.keys(parsedAnswers))
-        setError("回答データが不完全です。診断をやり直してください。")
-        setLoading(false)
+        if (isEffectActive) {
+          setError("回答データが不完全です。診断をやり直してください。")
+          setLoading(false)
+        }
         return
       }
       
       console.log("バリデーション成功")
       
-      setAnswers(parsedAnswers)
+      if (isEffectActive) {
+        setAnswers(parsedAnswers)
+      }
       
       // 既存の結果があるかチェック（一時的に無効化してテスト）
       // const existingResultStr = sessionStorage.getItem('v2_result')
@@ -201,17 +247,28 @@ export default function V2ResultPage() {
       
       // 新規分析を実行
       try {
-        analyzeV2Answers(parsedAnswers)
+        if (isEffectActive) {
+          analyzeV2Answers(parsedAnswers)
+        }
       } catch (analysisError) {
         console.error("分析処理エラー:", analysisError)
-        setError("分析処理中にエラーが発生しました。")
-        setLoading(false)
+        if (isEffectActive) {
+          setError("分析処理中にエラーが発生しました。")
+          setLoading(false)
+        }
       }
       
     } catch (parseError) {
       console.error("❌ V2回答データの解析に失敗:", parseError)
-      setError("回答データの解析に失敗しました。診断をやり直してください。")
-      setLoading(false)
+      if (isEffectActive) {
+        setError("回答データの解析に失敗しました。診断をやり直してください。")
+        setLoading(false)
+      }
+    }
+
+    // クリーンアップ関数
+    return () => {
+      isEffectActive = false
     }
   }, [])
 
@@ -265,8 +322,8 @@ export default function V2ResultPage() {
           const aiResult = await response.json()
           console.log("V2 AI分析成功:", aiResult)
           
-          // AI結果で更新
-          if (aiResult && aiResult.result) {
+          // AI結果で更新（エラー結果でない場合のみ）
+          if (aiResult && aiResult.result && aiResult.result.type !== "診断エラー") {
             setResult(aiResult.result)
             
             // セッションストレージに保存
@@ -277,7 +334,8 @@ export default function V2ResultPage() {
             
             console.log("V2 AI分析完了、結果を更新しました")
           } else {
-            console.warn("AI結果が不正な形式です:", aiResult)
+            console.warn("AI結果がエラーまたは不正な形式です:", aiResult)
+            console.log("ローカル分析結果を維持します")
           }
         } else {
           const errorText = await response.text()
@@ -310,9 +368,30 @@ export default function V2ResultPage() {
 
       // 重複保存を防ぐためのフラグをチェック
       const saveKey = `v2_saved_${sessionId}`
-      if (sessionStorage.getItem(saveKey) === 'true') {
+      const alreadySaved = sessionStorage.getItem(saveKey) === 'true'
+      
+      console.log("重複保存チェック:", { sessionId, saveKey, alreadySaved })
+      
+      if (alreadySaved) {
         console.log("既に保存済みのセッションです。重複保存をスキップします。")
         return
+      }
+      
+      // 保存開始をマーク（失敗時にクリアされる）
+      sessionStorage.setItem(saveKey, 'saving')
+
+      // V2のクリック履歴を取得
+      const v2ClickedServices = sessionStorage.getItem('v2_clicked_services')
+      let clickedServices = []
+      if (v2ClickedServices) {
+        try {
+          clickedServices = JSON.parse(v2ClickedServices)
+          console.log("V2クリック履歴を取得:", clickedServices)
+        } catch (e) {
+          console.warn("V2クリック履歴の解析に失敗:", e)
+        }
+      } else {
+        console.log("V2クリック履歴が見つかりません")
       }
 
       const saveData = {
@@ -321,8 +400,14 @@ export default function V2ResultPage() {
         sessionId,
         userAgent: navigator.userAgent,
         prefecture: null, // TODO: 都道府県取得があれば実装
-        isInitialSave: false // 診断完了時の保存
+        isInitialSave: false, // 診断完了時の保存
+        clickedServices // クリック履歴を追加
       }
+      
+      console.log("V2診断保存データ:", {
+        ...saveData,
+        clickedServicesCount: clickedServices.length
+      })
 
       console.log("データベース保存リクエスト:", JSON.stringify(saveData, null, 2))
       console.log("保存時のresult.type:", resultData.type)
@@ -353,9 +438,15 @@ export default function V2ResultPage() {
       } else {
         const errorText = await response.text()
         console.warn("❌ V2診断データ保存失敗:", response.status, errorText)
+        
+        // 保存失敗時はフラグをクリア（再試行可能にする）
+        sessionStorage.removeItem(saveKey)
       }
     } catch (saveError) {
       console.warn("V2診断データ保存でエラー:", saveError)
+      // エラー時もフラグをクリア（再試行可能にする）
+      const saveKey = `v2_saved_${sessionId}`
+      sessionStorage.removeItem(saveKey)
     }
   }
 
@@ -619,6 +710,9 @@ export default function V2ResultPage() {
                       console.log('Service ID:', service.id)
                       console.log('Service name:', service.name)
                       
+                      // V2専用のクリック履歴保存
+                      saveV2ClickedService(service.id, service.name, service.url)
+                      
                       trackEvent('v2_service_card_click', {
                         button_location: 'v2_result_page',
                         service_name: service.name,
@@ -672,6 +766,21 @@ export default function V2ResultPage() {
                                     console.log('Service ID:', service.id)
                                     console.log('Service name:', service.name)
                                     
+                                    // V2専用のクリック履歴保存
+                      saveV2ClickedService(service.id, service.name, service.url)
+                                    
+                                    // 詳細なサービスクリックイベント
+                                    const detailedEvent = createServiceClickEvent(service.id, service.name, 'v2')
+                                    trackEvent(detailedEvent, {
+                                      button_location: 'v2_result_page',
+                                      service_name: service.name,
+                                      service_id: service.id,
+                                      service_rank: index + 1,
+                                      click_type: 'title_click',
+                                      event_type: 'v2_final_page_service_click'
+                                    })
+                                    
+                                    // 従来のイベントも送信（互換性のため）
                                     trackEvent('v2_service_title_click', {
                                       button_location: 'v2_result_page',
                                       service_name: service.name,
@@ -775,6 +884,23 @@ export default function V2ResultPage() {
                           console.log('Service ID:', service.id)
                           console.log('Service name:', service.name)
                           
+                          // V2専用のクリック履歴保存
+                      saveV2ClickedService(service.id, service.name, service.url)
+                          
+                          // 詳細なサービスクリックイベント
+                          const detailedEvent = createServiceClickEvent(service.id, service.name, 'v2')
+                          trackEvent(detailedEvent, {
+                            button_location: 'v2_result_page',
+                            service_name: service.name,
+                            service_id: service.id,
+                            service_rank: index + 1,
+                            button_text: index === 0 ? '🚀 今すぐ詳細をチェック！' : '✨ 詳細を確認する',
+                            click_type: 'button_click',
+                            event_type: 'v2_final_page_service_click',
+                            is_top_recommendation: index === 0
+                          })
+                          
+                          // 従来のイベントも送信（互換性のため）
                           trackEvent('v2_service_button_click', {
                             button_location: 'v2_result_page',
                             service_name: service.name,

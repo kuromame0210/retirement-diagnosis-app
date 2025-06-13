@@ -7,7 +7,13 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(grep:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pkill:*)",
+      "Bash(npx next build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }
