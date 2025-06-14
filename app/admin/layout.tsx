@@ -1,4 +1,11 @@
-export const metadata = { title: "管理画面" }
+export const metadata = { 
+  title: "管理画面",
+  other: {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  }
+}
 
 export default function AdminLayout({
   children,

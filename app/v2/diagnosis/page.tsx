@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
 import { v2Questions, V2Answers, validateV2Answers } from "@/lib/v2/questions"
 import { trackEvent } from "@/lib/analytics"
+import { getV2Session, saveV2Session } from "@/lib/v2/session"
 
 export default function V2DiagnosisPage() {
   const router = useRouter()
@@ -18,6 +19,7 @@ export default function V2DiagnosisPage() {
     freeText: ""
   })
   const [demographicStep, setDemographicStep] = useState<'age' | 'job'>('age')
+  const [v2Session, setV2Session] = useState(getV2Session())
 
   const totalSteps = v2Questions.length + 1 // 質問 + フリーテキスト
   const progress = ((currentQuestion + 1) / totalSteps) * 100
@@ -29,7 +31,6 @@ export default function V2DiagnosisPage() {
     
     // 初期保存を一時的に無効化
     // initializeV2Diagnosis()
-    console.log("V2診断ページ開始 - 初期保存は無効化中")
   }, [])
 
   const initializeV2Diagnosis = async () => {
@@ -65,42 +66,83 @@ export default function V2DiagnosisPage() {
 
   const handleSingleSelect = (value: string) => {
     const questionId = question.id
+    const currentQuestionNumber = currentQuestion + 1
 
     if (questionId === 'demographics') {
       // 人口統計学的質問の処理
       if (demographicStep === 'age') {
-        setAnswers(prev => ({
-          ...prev,
-          demographics: { ...prev.demographics, age: value }
-        }))
+        const newAnswers = {
+          ...answers,
+          demographics: { ...answers.demographics, age: value }
+        }
+        setAnswers(newAnswers)
         setDemographicStep('job')
+        
+        // V1と同じようにセッション更新（年代選択）
+        updateV2SessionWithAnswer(newAnswers, currentQuestionNumber, `${questionId}_age`, value)
         return
       } else {
-        setAnswers(prev => ({
-          ...prev,
-          demographics: { ...prev.demographics, job: value }
-        }))
+        const newAnswers = {
+          ...answers,
+          demographics: { ...answers.demographics, job: value }
+        }
+        setAnswers(newAnswers)
+        
+        // V1と同じようにセッション更新（職種選択）
+        updateV2SessionWithAnswer(newAnswers, currentQuestionNumber, `${questionId}_job`, value)
         nextQuestion()
       }
     } else {
-      setAnswers(prev => ({ ...prev, [questionId]: value }))
+      const newAnswers = { ...answers, [questionId]: value }
+      setAnswers(newAnswers)
       
-      // トラッキング
-      trackEvent('v2_question_answered', {
-        question_id: questionId,
-        question_number: currentQuestion + 1,
-        answer: value,
-        version: 'v2'
-      })
+      // V1と同じようにセッション更新
+      updateV2SessionWithAnswer(newAnswers, currentQuestionNumber, questionId, value)
       
       nextQuestion()
     }
+  }
+
+  // V1と同じ思想でV2セッション更新関数
+  const updateV2SessionWithAnswer = (newAnswers: Partial<V2Answers>, questionNumber: number, questionId: string, value: string) => {
+    // ステップ計算: 1=開始, 2=質問1, 3=質問2, ... n+1=質問n, n+2=完了
+    const newStep = questionNumber + 1
+    const updatedSession = {
+      ...v2Session,
+      answers: newAnswers,
+      currentStep: newStep,
+      updatedAt: new Date().toISOString()
+    }
+    setV2Session(updatedSession)
+
+    // ステップ更新とupdated_at情報をコンソール出力
+    console.log("📊 [V2 Answer]", {
+      questionNumber,
+      questionId,
+      answer: Array.isArray(value) ? value.join(',') : value,
+      step: `${v2Session.currentStep} → ${newStep}`,
+      updatedAt: updatedSession.updatedAt
+    })
+
+    // 2. データベース同期を確実に実行
+    // V2セッション保存（データベース同期付き）
+    saveV2Session(updatedSession)
+    
+    // トラッキング（アナリティクス + V2セッション同期）
+    trackEvent('v2_question_answered', {
+      question_id: questionId,
+      question_number: questionNumber,
+      answer: value,
+      version: 'v2',
+      user_id: v2Session.userId // ユーザーIDを追加
+    })
   }
 
   const handleMultipleSelect = (value: string) => {
     const questionId = question.id as 'breaking_point'
     const currentSelections = answers[questionId] || []
     const maxSelections = question.maxSelections || 3
+    const currentQuestionNumber = currentQuestion + 1
 
     let newSelections: string[]
     if (currentSelections.includes(value)) {
@@ -114,7 +156,11 @@ export default function V2DiagnosisPage() {
       return
     }
 
-    setAnswers(prev => ({ ...prev, [questionId]: newSelections }))
+    const newAnswers = { ...answers, [questionId]: newSelections }
+    setAnswers(newAnswers)
+
+    // V1と同じようにセッション更新（複数選択）
+    updateV2SessionWithAnswer(newAnswers, currentQuestionNumber, questionId, newSelections.join(','))
   }
 
   const nextQuestion = () => {
@@ -145,30 +191,44 @@ export default function V2DiagnosisPage() {
     }
   }
 
-  const completeV2Diagnosis = () => {
-    console.log("=== V2診断完了処理開始 ===")
-    console.log("現在の回答:", answers)
+  const completeV2Diagnosis = async () => {
     
     if (!validateV2Answers(answers)) {
-      console.error("回答が不完全です", answers)
-      console.error("必要なフィールドが不足しています")
       alert("すべての質問に答えてから進んでください。")
       return
     }
-    
-    console.log("バリデーション成功")
 
-    // 完了トラッキング
+    // フリーテキストも含めた最終回答を更新
+    const finalAnswers = { ...answers }
+    // 診断完了段階: 全質問数 + 2 (1=開始, +質問数, +1=完了)
+    const completionStep = v2Questions.length + 2
+    const finalSession = {
+      ...v2Session,
+      answers: finalAnswers,
+      currentStep: completionStep,
+      completedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    setV2Session(finalSession)
+
+    // V1と同じようにバックグラウンドでセッション保存
+    saveV2Session(finalSession)
+
+    // 完了トラッキング（アナリティクス + セッション同期）
     trackEvent('v2_diagnosis_completed', {
       version: 'v2',
       total_questions: v2Questions.length,
-      completion_time: Date.now() // 実際の時間計測は別途実装
+      completion_time: Date.now()
     })
 
-    // セッションストレージに保存
-    sessionStorage.setItem('v2_answers', JSON.stringify(answers))
+    // セッションストレージに保存（互換性のため）
+    sessionStorage.setItem('v2_answers', JSON.stringify(finalAnswers))
     
-    // 結果ページへ
+    // 統一された保存関数を使用（非同期で実行して動作速度を保つ）
+    const { saveV2DiagnosisCompleted } = await import('@/lib/v2/database')
+    saveV2DiagnosisCompleted(finalAnswers)
+    
+    // 結果ページへ即座に遷移
     router.push('/v2/result')
   }
 
@@ -250,14 +310,50 @@ export default function V2DiagnosisPage() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button
                 variant="outline"
-                onClick={completeV2Diagnosis}
+                onClick={() => {
+                  // フリーテキストなしでも完了処理を実行
+                  const updatedAnswers = { ...answers, freeText: answers.freeText || "" }
+                  setAnswers(updatedAnswers)
+                  
+                  // V1と同じようにセッション更新してから完了
+                  const completionStep = v2Questions.length + 2
+                  const updatedSession = {
+                    ...v2Session,
+                    answers: updatedAnswers,
+                    freeText: answers.freeText || "",
+                    currentStep: completionStep,
+                    updatedAt: new Date().toISOString()
+                  }
+                  setV2Session(updatedSession)
+                  saveV2Session(updatedSession)
+                  
+                  completeV2Diagnosis()
+                }}
                 className="border-2 border-gray-300 text-gray-600 hover:bg-gray-50 text-sm sm:text-base py-2 sm:py-3"
               >
                 スキップして診断結果を見る
               </Button>
               
               <Button
-                onClick={completeV2Diagnosis}
+                onClick={() => {
+                  // フリーテキスト入力を反映してから完了
+                  const updatedAnswers = { ...answers }
+                  setAnswers(updatedAnswers)
+                  
+                  // V1と同じようにセッション更新してから完了
+                  const completionStep = v2Questions.length + 2
+                  const updatedSession = {
+                    ...v2Session,
+                    answers: updatedAnswers,
+                    freeText: answers.freeText || "",
+                    currentStep: completionStep,
+                    updatedAt: new Date().toISOString()
+                  }
+                  setV2Session(updatedSession)
+                  saveV2Session(updatedSession)
+                  
+                  completeV2Diagnosis()
+                }}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-sm sm:text-base py-2 sm:py-3"
               >
                 診断結果を見る

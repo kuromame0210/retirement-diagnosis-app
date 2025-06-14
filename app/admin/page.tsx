@@ -1,8 +1,23 @@
 export const dynamic = 'force-dynamic'   // これだけで常に最新
+export const revalidate = 0                // キャッシュを完全無効化
+export const fetchCache = 'force-no-store' // fetchキャッシュも無効化
+export const runtime = 'nodejs'            // Edge Runtimeキャッシュを回避
+
+// レスポンスヘッダーでクライアントサイドキャッシュも無効化
+export async function generateMetadata() {
+  return {
+    other: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  }
+}
 
 // src/app/admin/page.tsx
 import { supabaseAdmin } from "@/lib/supabase"
 import Link from "next/link"
+import RefreshControls from "./components/RefreshControls"
 
 // サービスクリック統計のタイプ定義
 interface ServiceClickStats {
@@ -16,29 +31,82 @@ export default async function DiagnosisList() {
   // 全データを取得してからフィルタリング
   let allData: any[] = []
   let allError: any = null
+  let totalCount: number | null = null
   
   try {
-    // まずclicked_servicesカラムありで試行
-    const { data, error } = await supabaseAdmin
+    const queryTimestamp = Date.now()
+    console.log("🔥 最新版 - データベースクエリ開始...")
+    console.log("🔄 Timestamp fix applied - キャッシュクリア済み")
+    console.log("🕐 クエリタイムスタンプ:", queryTimestamp, new Date(queryTimestamp).toISOString())
+    
+    // 正確な全レコード数を確認（キャッシュ無効化）
+    const { count: exactCount } = await supabaseAdmin
+      .from("career_user_diagnosis")
+      .select("user_id", { count: 'exact', head: true })
+    
+    // 実際のデータも取得して件数を比較
+    const { data: allRecords } = await supabaseAdmin
+      .from("career_user_diagnosis")
+      .select("user_id, version_type, created_at")
+      .order("created_at", { ascending: false })
+    
+    totalCount = exactCount
+    
+    console.log("🔍 データベースレコード数検証:")
+    console.log("  - COUNT(user_id)での件数:", exactCount)
+    console.log("  - 実際取得したレコード数:", allRecords?.length || 0)
+    console.log("  - レコード数一致:", exactCount === (allRecords?.length || 0))
+    
+    if (allRecords && allRecords.length > 0) {
+      console.log("  - 最新レコード作成日:", allRecords[0]?.created_at)
+      console.log("  - 最古レコード作成日:", allRecords[allRecords.length - 1]?.created_at)
+      
+      // version_type別の件数
+      const v1Count = allRecords.filter(r => r.version_type !== 'v2').length
+      const v2Count = allRecords.filter(r => r.version_type === 'v2').length
+      console.log("  - V1データ件数:", v1Count)
+      console.log("  - V2データ件数:", v2Count)
+      console.log("  - 合計:", v1Count + v2Count)
+    }
+    
+    // まずclicked_servicesカラムありで試行（キャッシュ回避のためタイムスタンプ追加）
+    const timestamp = new Date().getTime()
+    console.log("🔄 クエリ実行タイムスタンプ:", timestamp)
+    
+    const { data, error, count: queryCount } = await supabaseAdmin
       .from("career_user_diagnosis")
       .select(
-        "user_id, q1, simple_type, final_type, updated_at, version_type, clicked_services"
+        "user_id, q1, simple_type, final_type, updated_at, version_type, clicked_services",
+        { count: 'exact' }
       )
       .order("updated_at", { ascending: false })
-      .limit(200)
+      .limit(500) // 制限を緩和してすべてのデータを確実に取得
+    
+    console.log("クエリ結果:", { 
+      dataLength: data?.length || 0, 
+      queryCount: queryCount,
+      hasError: !!error 
+    })
     
     if (error) {
       // clicked_servicesカラムが存在しない場合は、カラムなしで再試行
       console.warn("clicked_servicesカラムが存在しません:", error.message)
       console.warn("エラーコード:", error.code)
       console.warn("エラー詳細:", error.details)
-      const { data: fallbackData, error: fallbackError } = await supabaseAdmin
+      const { data: fallbackData, error: fallbackError, count: fallbackCount } = await supabaseAdmin
         .from("career_user_diagnosis")
         .select(
-          "user_id, q1, simple_type, final_type, updated_at, version_type"
+          "user_id, q1, simple_type, final_type, updated_at, version_type",
+          { count: 'exact' }
         )
         .order("updated_at", { ascending: false })
-        .limit(200)
+        .limit(500) // フォールバック時も制限を緩和
+      
+      console.log("フォールバッククエリ結果:", { 
+        dataLength: fallbackData?.length || 0, 
+        fallbackCount: fallbackCount,
+        hasError: !!fallbackError 
+      })
       
       if (fallbackError) throw fallbackError
       allData = fallbackData || []
@@ -52,8 +120,22 @@ export default async function DiagnosisList() {
   if (allError) throw allError
 
   // version_typeカラムを使った確実なフィルタリング
-  const v1Data = allData?.filter(row => row.version_type !== 'v2') || []
-  const v2Data = allData?.filter(row => row.version_type === 'v2') || []
+  const v1DataRaw = allData?.filter(row => row.version_type !== 'v2') || []
+  const v2DataRaw = allData?.filter(row => row.version_type === 'v2') || []
+  
+  // V1データを更新日時順でソート（最新100件）
+  const v1Data = v1DataRaw.sort((a, b) => {
+    const dateA = new Date(a.updated_at)
+    const dateB = new Date(b.updated_at)
+    return dateB.getTime() - dateA.getTime() // 降順（最新が先頭）
+  }).slice(0, 100)
+  
+  // V2データを更新日時順でソート（最新100件）
+  const v2Data = v2DataRaw.sort((a, b) => {
+    const dateA = new Date(a.updated_at)
+    const dateB = new Date(b.updated_at)
+    return dateB.getTime() - dateA.getTime() // 降順（最新が先頭）
+  }).slice(0, 100)
 
   // サービスクリック統計を集計
   const serviceClickStats: Record<string, ServiceClickStats> = {}
@@ -109,12 +191,24 @@ export default async function DiagnosisList() {
   const sortedServiceStats = Object.values(serviceClickStats)
     .sort((a, b) => b.click_count - a.click_count)
 
-  console.log("全データ件数:", allData?.length || 0)
-  console.log("V1データ件数:", v1Data?.length || 0)
-  console.log("V2データ件数:", v2Data?.length || 0)
+  console.log("🔍 データ分析:")
+  console.log("  - データベース総件数:", totalCount)
+  console.log("  - 取得データ件数:", allData?.length || 0)
+  console.log("  - V1データ件数 (ソート前/後):", v1DataRaw?.length || 0, "/", v1Data?.length || 0)
+  console.log("  - V2データ件数 (ソート前/後):", v2DataRaw?.length || 0, "/", v2Data?.length || 0)
+  
+  // データ不整合の詳細分析
+  if (allData && totalCount && allData.length !== totalCount) {
+    console.warn("⚠️ データ不整合検出:")
+    console.warn("  - DB総件数:", totalCount)
+    console.warn("  - 取得件数:", allData.length)
+    console.warn("  - 差分:", Math.abs((totalCount || 0) - allData.length))
+  }
   console.log("V2データの詳細:", v2Data)
-  console.log("全データのversion_type:", allData?.map(d => ({ id: d.user_id, version_type: d.version_type, final_type: d.final_type })))
+  console.log("V2データの最新3件のupdated_at:", v2Data.slice(0, 3).map(d => ({ id: d.user_id, updated_at: d.updated_at })))
   console.log("全データのversion_type一覧:", allData?.map(row => `${row.user_id}: ${row.version_type}`))
+  console.log("V2データのfinal_type一覧:", v2DataRaw?.map(row => ({ id: row.user_id, final_type: row.final_type, simple_type: row.simple_type })))
+  console.log("診断エラーのV2データ:", allData?.filter(row => row.version_type === 'v2' && row.final_type?.includes('診断エラー')))
   console.log("V2データサンプル:", v2Data?.[0])
   console.log("最新3件のデータ詳細:", allData?.slice(0, 3).map(row => ({
     user_id: row.user_id, 
@@ -124,6 +218,9 @@ export default async function DiagnosisList() {
 
   return (
     <div className="space-y-8">
+      {/* ページ制御ヘッダー */}
+      <RefreshControls />
+
       {/* サービスクリック統計 */}
       <div>
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">

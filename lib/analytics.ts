@@ -51,8 +51,6 @@ export const trackEvent = (
     // わかりやすい日本語名から英語名に変換
     const englishAction = EVENT_NAME_MAP[action] || action
     
-    // デバッグ用ログ（日本語名も表示）
-    console.log(`[Analytics] ${action}${action !== englishAction ? ` → ${englishAction}` : ''}`, params)
 
     /* === GA4 === */
     if (typeof window === 'undefined') return   // SSR では何もしない
@@ -60,53 +58,64 @@ export const trackEvent = (
 
     ;(window as any).gtag('event', englishAction, params)
 
-    /* ========= Supabase UPSERT（デバウンス付き） - V1のみ ========= */
-    // V2診断関連のイベントはV1のセッション同期をスキップ
+    /* ========= Supabase UPSERT（デバウンス付き） - V1/V2振り分け ========= */
+    // V2診断関連のイベントかどうかを判定（シンプル化）
     const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
-    const actionIncludesV2 = action.includes('v2') || action.includes('V2')
-    const paramsVersionV2 = params?.version === 'v2'
-    const pathStartsWithV2 = pathname.startsWith('/v2')
-    
     const isV2Event = typeof window !== 'undefined' && (
-      pathStartsWithV2 || 
-      actionIncludesV2 || 
-      paramsVersionV2
+      pathname.startsWith('/v2') || 
+      action.includes('v2') || 
+      action.includes('V2') ||
+      params?.version === 'v2'
     )
     
-    console.log("[trackEvent] V2判定デバッグ:", {
-      action,
-      pathname,
-      actionIncludesV2,
-      paramsVersionV2,
-      pathStartsWithV2,
-      isV2Event
-    })
-    
+
     if (isV2Event) {
-      console.log("[trackEvent] V2イベントのため、V1セッション同期をスキップ:", action)
-      return
-    }
-
-    try {
-      const session = getSession()                     // localStorage の最新
-      console.log("[trackEvent] send", { action, session })
-
-      // 既存のタイマーをクリア
-      if (syncDebounceTimer) {
-        clearTimeout(syncDebounceTimer)
-      }
-
-      // 100ms後に同期実行（高頻度クリックを防ぐ）
-      syncDebounceTimer = setTimeout(() => {
-        syncSessionToServer()
-          .catch((e) => console.warn("syncSessionToServer failed", e))
-          .finally(() => {
-            syncDebounceTimer = null
+      /* ========= V2セッション同期 ========= */
+      
+      try {
+        // V2セッション同期を非同期で実行
+        import('@/lib/v2/session').then(({ syncV2SessionToServer, getV2Session }) => {
+          const v2Session = getV2Session()
+          console.log("📊 [V2 Analytics] セッション情報:", { 
+            action, 
+            userId: v2Session.userId,
+            currentStep: v2Session.currentStep
           })
-      }, 100)
+          
+          // V2同期実行
+          syncV2SessionToServer()
+            .catch((e) => console.warn("❌ [V2 Analytics] セッション同期失敗:", e))
+        }).catch((e) => console.warn("❌ [V2 Analytics] セッション取得失敗:", e))
+        
+      } catch (e) {
+        console.warn("❌ [V2 Analytics] V2処理失敗:", e)
+      }
+      
+      return // V2イベントの場合はここで終了、V1処理をスキップ
+      
+    } else {
+      /* ========= V1セッション同期（既存処理） ========= */
+      
+      try {
+        const session = getSession()                     // localStorage の最新
 
-    } catch (e) {
-      console.warn("trackEvent: getSession failed", e)
+        // 既存のタイマーをクリア
+        if (syncDebounceTimer) {
+          clearTimeout(syncDebounceTimer)
+        }
+
+        // 100ms後に同期実行（高頻度クリックを防ぐ）
+        syncDebounceTimer = setTimeout(() => {
+          syncSessionToServer()
+            .catch((e) => console.warn("syncSessionToServer failed", e))
+            .finally(() => {
+              syncDebounceTimer = null
+            })
+        }, 100)
+
+      } catch (e) {
+        console.warn("trackEvent: V1 getSession failed", e)
+      }
     }
 
   }
