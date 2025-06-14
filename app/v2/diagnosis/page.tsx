@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
 import { v2Questions, V2Answers, validateV2Answers } from "@/lib/v2/questions"
 import { trackEvent } from "@/lib/analytics"
+import { getJSTTimestamp } from "@/lib/utils/timestamp"
 import { getV2Session, saveV2Session } from "@/lib/v2/session"
 
 export default function V2DiagnosisPage() {
@@ -111,7 +112,7 @@ export default function V2DiagnosisPage() {
       ...v2Session,
       answers: newAnswers,
       currentStep: newStep,
-      updatedAt: new Date().toISOString()
+      updatedAt: getJSTTimestamp()
     }
     setV2Session(updatedSession)
 
@@ -206,8 +207,8 @@ export default function V2DiagnosisPage() {
       ...v2Session,
       answers: finalAnswers,
       currentStep: completionStep,
-      completedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      completedAt: getJSTTimestamp(),
+      updatedAt: getJSTTimestamp()
     }
     setV2Session(finalSession)
 
@@ -322,7 +323,7 @@ export default function V2DiagnosisPage() {
                     answers: updatedAnswers,
                     freeText: answers.freeText || "",
                     currentStep: completionStep,
-                    updatedAt: new Date().toISOString()
+                    updatedAt: getJSTTimestamp()
                   }
                   setV2Session(updatedSession)
                   saveV2Session(updatedSession)
@@ -347,7 +348,7 @@ export default function V2DiagnosisPage() {
                     answers: updatedAnswers,
                     freeText: answers.freeText || "",
                     currentStep: completionStep,
-                    updatedAt: new Date().toISOString()
+                    updatedAt: getJSTTimestamp()
                   }
                   setV2Session(updatedSession)
                   saveV2Session(updatedSession)

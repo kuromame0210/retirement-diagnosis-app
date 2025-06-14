@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase"
 import { UAParser } from "ua-parser-js"
-
-// 日本時間（JST）のタイムスタンプを取得する関数
-const getJSTTimestamp = (): string => {
-  // 日本時間（JST = UTC+9）に変換
-  const now = new Date()
-  const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
-  return jstTime.toISOString()
-}
+import { getJSTTimestamp } from "@/lib/utils/timestamp"
 
 /* ───────── IP & Geo を取得 ───────── */
 function getClientIp(req: NextRequest) {

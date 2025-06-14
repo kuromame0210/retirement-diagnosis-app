@@ -3,6 +3,8 @@
  * V1のstorage.tsと同じ思想でV2用に実装
  */
 
+import { getJSTTimestamp } from "@/lib/utils/timestamp"
+
 export const V2_STORAGE_KEY = "v2_diagnosis_session"
 
 export interface V2DiagnosisSession {
@@ -23,12 +25,9 @@ export interface V2DiagnosisSession {
   completedAt?: string
 }
 
-// 日本時間（JST）のタイムスタンプを取得する関数
+// V2セッション用のJSTタイムスタンプ取得関数（共通ユーティリティを使用）
 export const getV2JSTTimestamp = (): string => {
-  // 日本時間（JST = UTC+9）に変換
-  const now = new Date()
-  const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
-  return jstTime.toISOString()
+  return getJSTTimestamp()
 }
 
 /* V2セッションを取得 */

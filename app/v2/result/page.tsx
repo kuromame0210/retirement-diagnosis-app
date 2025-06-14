@@ -9,6 +9,7 @@ import { Loader2, ArrowRight, AlertTriangle, CheckCircle, Clock, Sparkles, Brain
 import { V2Answers, validateV2Answers } from "@/lib/v2/questions"
 import { recommendV2Services, V2RecommendedService } from "@/lib/v2/serviceRecommendation"
 import { trackEvent, createServiceClickEvent } from "@/lib/analytics"
+import { getJSTTimestamp } from "@/lib/utils/timestamp"
 
 // V2専用のクリック履歴保存関数（統一された保存関数使用）
 const saveV2ClickedService = async (id: string, name: string, url: string) => {
@@ -29,7 +30,7 @@ const saveV2ClickedService = async (id: string, name: string, url: string) => {
     // 重複チェック
     const existingService = clickedServices.find((s: any) => s.id === id)
     if (!existingService) {
-      const clickedAt = new Date().toISOString()
+      const clickedAt = getJSTTimestamp()
       const newService = { id, name, url, clickedAt }
       clickedServices.push(newService)
       
@@ -288,7 +289,7 @@ export default function V2ResultPage() {
   useEffect(() => {
     console.log("=== V2結果ページ - セッションデータ確認 ===")
     console.log("🔄 キャッシュクリア済み - 最新コードが動作中")
-    console.log("⏰ Current timestamp test:", new Date().toISOString())
+    console.log("⏰ Current timestamp test:", getJSTTimestamp())
     
     // React StrictModeでの重複実行を防ぐためのフラグ
     let isEffectActive = true
