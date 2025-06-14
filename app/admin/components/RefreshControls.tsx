@@ -1,6 +1,14 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+
 export default function RefreshControls() {
+  const [currentTime, setCurrentTime] = useState('')
+
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleString('ja-JP'))
+  }, [])
+
   const handleNormalReload = () => {
     window.location.reload()
   }
@@ -23,7 +31,7 @@ export default function RefreshControls() {
         <div>
           <h1 className="text-lg font-bold text-blue-900">管理画面データ</h1>
           <p className="text-sm text-blue-700">
-            最新データ取得時刻: {new Date().toLocaleString('ja-JP')}
+            最新データ取得時刻: {currentTime}
           </p>
         </div>
         <div className="flex gap-2">

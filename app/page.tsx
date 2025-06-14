@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Brain, Clock, Shield, Users, CheckCircle, ArrowRight, Zap, Code2, Sparkles } from "lucide-react"
 import { trackEvent } from "@/lib/analytics"
+import { redirect } from 'next/navigation'
 
 export default function HomePage() {
 
+  redirect('/v2')
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       
