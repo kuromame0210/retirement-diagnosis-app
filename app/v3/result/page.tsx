@@ -131,17 +131,17 @@ function ServiceCard({ recommendation, onServiceClick, isUrgent = false }: {
             
             <div className="flex-1 min-w-0">
               <h3 
-                className="text-sm sm:text-base font-bold text-gray-900 leading-tight cursor-pointer hover:text-blue-600 transition-colors line-clamp-2"
+                className="text-lg sm:text-xl font-bold text-gray-900 leading-tight cursor-pointer hover:text-blue-600 transition-colors line-clamp-2"
                 onClick={() => onServiceClick(recommendation.service, recommendation)}
               >
                 {recommendation.service.name}
               </h3>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 border-blue-200">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <Badge variant="outline" className="text-sm px-2 py-1 bg-blue-50 text-blue-700 border-blue-200">
                   {Math.round(recommendation.score * 10) / 10}点
                 </Badge>
                 {recommendation.priority === 'urgent' && (
-                  <Badge variant="destructive" className="text-xs px-1.5 py-0.5">
+                  <Badge variant="destructive" className="text-sm px-2 py-1">
                     緊急
                   </Badge>
                 )}
@@ -150,39 +150,39 @@ function ServiceCard({ recommendation, onServiceClick, isUrgent = false }: {
           </div>
 
           {/* 簡潔な説明 */}
-          <p className="text-xs text-gray-600 leading-relaxed line-clamp-1 ml-2 px-1">
+          <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 ml-2 px-1">
             {recommendation.service.description}
           </p>
 
           {/* 詳細展開エリア */}
           <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-            <CollapsibleTrigger className="flex items-center justify-center w-full py-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors hover:bg-blue-50 rounded-md">
+            <CollapsibleTrigger className="flex items-center justify-center w-full py-2 text-sm text-blue-600 hover:text-blue-800 transition-colors hover:bg-blue-50 rounded-md">
               {isExpanded ? (
-                <>詳細を閉じる <ChevronUp className="w-3 h-3 ml-1" /></>
+                <>詳細を閉じる <ChevronUp className="w-4 h-4 ml-1" /></>
               ) : (
-                <>詳細を見る <ChevronDown className="w-3 h-3 ml-1" /></>
+                <>詳細を見る <ChevronDown className="w-4 h-4 ml-1" /></>
               )}
             </CollapsibleTrigger>
             
             <CollapsibleContent className="space-y-2 mt-2 border-t pt-2">
-              {/* AI推薦理由（コンパクト） */}
-              <div className="bg-blue-50 rounded-md p-2">
-                <h5 className="text-xs font-semibold text-blue-800 mb-1 flex items-center gap-1">
-                  <Brain className="w-3 h-3" />
+              {/* AI推薦理由 */}
+              <div className="bg-blue-50 rounded-md p-3">
+                <h5 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1">
+                  <Brain className="w-4 h-4" />
                   推薦理由
                 </h5>
-                <p className="text-xs text-blue-700 leading-relaxed">
+                <p className="text-sm text-blue-700 leading-relaxed">
                   {recommendation.aiReason}
                 </p>
               </div>
 
-              {/* 期待される効果（コンパクト） */}
-              <div className="bg-green-50 rounded-md p-2">
-                <h5 className="text-xs font-semibold text-green-800 mb-1 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
+              {/* 期待される効果 */}
+              <div className="bg-green-50 rounded-md p-3">
+                <h5 className="text-sm font-semibold text-green-800 mb-2 flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4" />
                   期待効果
                 </h5>
-                <p className="text-xs text-green-700">
+                <p className="text-sm text-green-700">
                   {recommendation.expectedOutcome}
                 </p>
               </div>
@@ -194,7 +194,7 @@ function ServiceCard({ recommendation, onServiceClick, isUrgent = false }: {
                     <Badge 
                       key={index} 
                       variant="secondary" 
-                      className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600"
+                      className="text-sm px-2 py-1 bg-gray-100 text-gray-600"
                     >
                       {factor}
                     </Badge>
@@ -204,10 +204,10 @@ function ServiceCard({ recommendation, onServiceClick, isUrgent = false }: {
             </CollapsibleContent>
           </Collapsible>
 
-          {/* アクションボタン（簡素化） */}
+          {/* アクションボタン */}
           <Button
             onClick={() => onServiceClick(recommendation.service, recommendation)}
-            className={`w-full h-8 text-xs font-medium transition-all duration-200 ${
+            className={`w-full h-12 text-sm font-medium transition-all duration-200 ${
               rank === 1 
                 ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
                 : rank === 2
@@ -217,7 +217,7 @@ function ServiceCard({ recommendation, onServiceClick, isUrgent = false }: {
                 : 'bg-blue-500 hover:bg-blue-600 text-white'
             }`}
           >
-            詳細をチェック <ExternalLink className="w-3 h-3 ml-1" />
+            詳細をチェック <ExternalLink className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </CardContent>

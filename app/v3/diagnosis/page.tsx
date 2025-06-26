@@ -39,6 +39,7 @@ export default function V3DiagnosisPage() {
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [currentAnswer, setCurrentAnswer] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showContent, setShowContent] = useState(false)
   const [validationError, setValidationError] = useState("")
   const [showPartialDiagnosis, setShowPartialDiagnosis] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
@@ -58,6 +59,9 @@ export default function V3DiagnosisPage() {
     if (currentQuestionId && sessionAnswers[currentQuestionId]?.answer) {
       setCurrentAnswer(sessionAnswers[currentQuestionId].answer)
     }
+    
+    // コンテンツ表示を少し遅延
+    setTimeout(() => setShowContent(true), 100)
   }, [])
 
   const currentQuestion = V3_QUESTIONS[currentStep - 1]
@@ -285,6 +289,25 @@ export default function V3DiagnosisPage() {
     )
   }
 
+  if (!showContent) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          {/* シンプルなローディングドット */}
+          <div className="flex justify-center gap-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-900">読み込み中...</h3>
+            <p className="text-gray-600">診断ページを準備中です</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* プログレスヘッダー（整理版） */}
@@ -387,49 +410,59 @@ export default function V3DiagnosisPage() {
         </Alert>
       )}
 
-      {/* 診断中の全画面ローディングモーダル */}
+      {/* 診断中のローディングモーダル - シンプル版 */}
       {isLoading && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
-            <div className="text-center space-y-6">
-              {/* メインローディングアニメーション */}
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-xl">
+            <div className="text-center space-y-4">
+              {/* モダンなドット・パルスアニメーション */}
               <div className="relative">
-                <div className="w-20 h-20 mx-auto">
-                  <div className="absolute inset-0 border-4 border-green-200 rounded-full"></div>
-                  <div className="absolute inset-0 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-                  <div className="absolute inset-2 border-4 border-blue-200 rounded-full"></div>
-                  <div className="absolute inset-2 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '0.8s'}}></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Brain className="w-8 h-8 text-green-600" />
+                <div className="w-12 h-12 mx-auto flex items-center justify-center">
+                  {/* 背景の波紋エフェクト */}
+                  <div className="absolute inset-0">
+                    <div className="absolute inset-1 border-2 border-green-300 rounded-full animate-ping opacity-20"></div>
+                    <div className="absolute inset-2 border-2 border-blue-300 rounded-full animate-ping opacity-30" style={{animationDelay: '0.5s'}}></div>
                   </div>
+                  
+                  {/* 中央のアイコン */}
+                  <div className="relative">
+                    <Brain className="w-6 h-6 text-green-600 animate-pulse" />
+                  </div>
+                </div>
+                
+                {/* 下部のローディングドット */}
+                <div className="flex justify-center gap-1 mt-3">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                 </div>
               </div>
 
               {/* タイトル */}
               <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Claude AIが分析中</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Claude AIが分析中</h3>
                 <p className="text-sm text-gray-600">あなたの回答を深く分析しています...</p>
               </div>
 
-              {/* プロセス表示 */}
-              <div className="space-y-3 text-left">
-                <div className="flex items-center justify-between text-sm">
+              {/* シンプルなプロセス表示 */}
+              <div className="space-y-2 text-left">
+                <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
                     テキスト解析
                   </span>
                   <span className="text-green-600 font-medium">完了 ✓</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
                     感情分析
                   </span>
                   <span className="text-blue-600 font-medium">実行中...</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
                     キャリア診断
                   </span>
                   <span className="text-gray-400">待機中</span>
@@ -437,23 +470,8 @@ export default function V3DiagnosisPage() {
               </div>
 
               {/* プログレスバー */}
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div className="bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 h-2 rounded-full transition-all duration-1000 animate-pulse" style={{width: '70%'}}></div>
-              </div>
-
-              {/* 特徴説明 */}
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-3 border border-green-200">
-                <p className="text-xs text-green-800 font-medium mb-1">✨ V3 Claude分析の特徴</p>
-                <div className="grid grid-cols-2 gap-1 text-xs text-green-700">
-                  <div className="flex items-center gap-1">
-                    <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                    高精度分析
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-1 h-1 bg-blue-500 rounded-full"></span>
-                    パーソナライズ
-                  </div>
-                </div>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div className="bg-gradient-to-r from-green-500 to-blue-500 h-1.5 rounded-full transition-all duration-1000 animate-pulse" style={{width: '70%'}}></div>
               </div>
             </div>
           </div>
