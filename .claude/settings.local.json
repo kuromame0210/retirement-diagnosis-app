@@ -18,7 +18,12 @@
       "Bash(npm test)",
       "Bash(npm test:*)",
       "Bash(curl:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(ls:*)",
+      "Bash(true)",
+      "Bash(npx jest:*)"
     ],
     "deny": []
   }

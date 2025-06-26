@@ -32,15 +32,15 @@ export const getJSTTimestamp = (): string => {
   // ISO形式で組み立て（ミリ秒も保持）
   const jstISOString = `${year}-${month}-${day}T${hour}:${minute}:${second}.${now.getMilliseconds().toString().padStart(3, '0')}Z`
   
-  // デバッグ用ログ（本番環境では削除可能）
-  if (process.env.NODE_ENV === 'development') {
-    console.log("🕐 JST Timestamp:", {
-      original_utc: now.toISOString(),
-      jst_converted: jstISOString,
-      system_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      check_jst: now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
-    })
-  }
+  // デバッグ用ログ（現在無効化）
+  // if (process.env.NODE_ENV === 'development') {
+  //   console.log("🕐 JST Timestamp:", {
+  //     original_utc: now.toISOString(),
+  //     jst_converted: jstISOString,
+  //     system_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  //     check_jst: now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+  //   })
+  // }
   
   return jstISOString
 }

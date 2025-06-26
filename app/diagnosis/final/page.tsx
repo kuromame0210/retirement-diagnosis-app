@@ -225,7 +225,7 @@ ${finalResult.encouragingMessage ? `応援メッセージ:\n${finalResult.encour
   const recommendedServices = getRecommendedServices()
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-4 max-w-4xl">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
           <Heart className="w-8 h-8 text-pink-500" />

@@ -18,6 +18,7 @@ export async function generateMetadata() {
 import { supabaseAdmin } from "@/lib/supabase"
 import Link from "next/link"
 import RefreshControls from "./components/RefreshControls"
+import { getV3DiagnosisListForAdmin, getV3ServiceClickStats, getV3DiagnosisStats } from "@/lib/v3/database"
 
 // サービスクリック統計のタイプ定義
 interface ServiceClickStats {
@@ -28,85 +29,44 @@ interface ServiceClickStats {
 }
 
 export default async function DiagnosisList() {
-  // 全データを取得してからフィルタリング
+  // V1/V2データを取得してからフィルタリング
   let allData: any[] = []
   let allError: any = null
   let totalCount: number | null = null
   
+  // V3データを並列取得
+  let v3Data: any[] = []
+  let v3Stats: any = null
+  let v3ServiceStats: any[] = []
+  
   try {
-    const queryTimestamp = Date.now()
-    console.log("🔥 最新版 - データベースクエリ開始...")
-    console.log("🔄 Timestamp fix applied - キャッシュクリア済み")
-    console.log("🕐 クエリタイムスタンプ:", queryTimestamp, new Date(queryTimestamp).toISOString())
-    
-    // 正確な全レコード数を確認（キャッシュ無効化）
+    // レコード数を取得
     const { count: exactCount } = await supabaseAdmin
       .from("career_user_diagnosis")
       .select("user_id", { count: 'exact', head: true })
     
-    // 実際のデータも取得して件数を比較
-    const { data: allRecords } = await supabaseAdmin
-      .from("career_user_diagnosis")
-      .select("user_id, version_type, created_at")
-      .order("created_at", { ascending: false })
-    
     totalCount = exactCount
     
-    console.log("🔍 データベースレコード数検証:")
-    console.log("  - COUNT(user_id)での件数:", exactCount)
-    console.log("  - 実際取得したレコード数:", allRecords?.length || 0)
-    console.log("  - レコード数一致:", exactCount === (allRecords?.length || 0))
-    
-    if (allRecords && allRecords.length > 0) {
-      console.log("  - 最新レコード作成日:", allRecords[0]?.created_at)
-      console.log("  - 最古レコード作成日:", allRecords[allRecords.length - 1]?.created_at)
-      
-      // version_type別の件数
-      const v1Count = allRecords.filter(r => r.version_type !== 'v2').length
-      const v2Count = allRecords.filter(r => r.version_type === 'v2').length
-      console.log("  - V1データ件数:", v1Count)
-      console.log("  - V2データ件数:", v2Count)
-      console.log("  - 合計:", v1Count + v2Count)
-    }
-    
-    // まずclicked_servicesカラムありで試行（キャッシュ回避のためタイムスタンプ追加）
-    const timestamp = new Date().getTime()
-    console.log("🔄 クエリ実行タイムスタンプ:", timestamp)
-    
-    const { data, error, count: queryCount } = await supabaseAdmin
+    // データ取得（clicked_servicesカラムありで試行）
+    const { data, error } = await supabaseAdmin
       .from("career_user_diagnosis")
       .select(
         "user_id, q1, simple_type, final_type, updated_at, version_type, clicked_services",
         { count: 'exact' }
       )
       .order("updated_at", { ascending: false })
-      .limit(500) // 制限を緩和してすべてのデータを確実に取得
-    
-    console.log("クエリ結果:", { 
-      dataLength: data?.length || 0, 
-      queryCount: queryCount,
-      hasError: !!error 
-    })
+      .limit(500)
     
     if (error) {
       // clicked_servicesカラムが存在しない場合は、カラムなしで再試行
-      console.warn("clicked_servicesカラムが存在しません:", error.message)
-      console.warn("エラーコード:", error.code)
-      console.warn("エラー詳細:", error.details)
-      const { data: fallbackData, error: fallbackError, count: fallbackCount } = await supabaseAdmin
+      const { data: fallbackData, error: fallbackError } = await supabaseAdmin
         .from("career_user_diagnosis")
         .select(
           "user_id, q1, simple_type, final_type, updated_at, version_type",
           { count: 'exact' }
         )
         .order("updated_at", { ascending: false })
-        .limit(500) // フォールバック時も制限を緩和
-      
-      console.log("フォールバッククエリ結果:", { 
-        dataLength: fallbackData?.length || 0, 
-        fallbackCount: fallbackCount,
-        hasError: !!fallbackError 
-      })
+        .limit(500)
       
       if (fallbackError) throw fallbackError
       allData = fallbackData || []
@@ -115,6 +75,22 @@ export default async function DiagnosisList() {
     }
   } catch (e) {
     allError = e
+  }
+  
+  // V3データを並列取得
+  try {
+    const [v3List, v3Statistics, v3ServiceClicks] = await Promise.all([
+      getV3DiagnosisListForAdmin(100),
+      getV3DiagnosisStats(),
+      getV3ServiceClickStats()
+    ])
+    
+    v3Data = v3List.data
+    v3Stats = v3Statistics
+    v3ServiceStats = v3ServiceClicks
+  } catch (v3Error) {
+    console.error("V3データ取得エラー:", v3Error)
+    // V3エラーは致命的ではないので続行
   }
   
   if (allError) throw allError
@@ -140,25 +116,11 @@ export default async function DiagnosisList() {
   // サービスクリック統計を集計
   const serviceClickStats: Record<string, ServiceClickStats> = {}
   
-  console.log("クリック統計集計開始")
-  console.log("処理対象データ数:", allData?.length || 0)
-  
-  allData?.forEach((row, index) => {
-    console.log(`データ${index + 1}:`, {
-      user_id: row.user_id,
-      version_type: row.version_type,
-      clicked_services: row.clicked_services,
-      clicked_services_type: typeof row.clicked_services,
-      clicked_services_length: Array.isArray(row.clicked_services) ? row.clicked_services.length : 'not array'
-    })
-    
+  allData?.forEach((row) => {
     // clicked_servicesカラムが存在し、かつ配列である場合のみ処理
     if (row.clicked_services && Array.isArray(row.clicked_services)) {
-      console.log(`データ${index + 1}のクリック履歴を処理:`, row.clicked_services)
-      
       row.clicked_services.forEach((service: any) => {
         const serviceName = service.name || 'Unknown Service'
-        console.log('サービス処理中:', serviceName)
         
         if (!serviceClickStats[serviceName]) {
           serviceClickStats[serviceName] = {
@@ -176,50 +138,151 @@ export default async function DiagnosisList() {
           serviceClickStats[serviceName].latest_click = row.updated_at
         }
       })
-    } else {
-      console.log(`データ${index + 1}: クリック履歴なしまたは無効`, {
-        clicked_services: row.clicked_services,
-        type: typeof row.clicked_services
-      })
     }
   })
-  
-  console.log("集計結果:", serviceClickStats)
-  console.log("集計されたサービス数:", Object.keys(serviceClickStats).length)
 
   // クリック数順でソート
   const sortedServiceStats = Object.values(serviceClickStats)
     .sort((a, b) => b.click_count - a.click_count)
 
-  console.log("🔍 データ分析:")
-  console.log("  - データベース総件数:", totalCount)
-  console.log("  - 取得データ件数:", allData?.length || 0)
-  console.log("  - V1データ件数 (ソート前/後):", v1DataRaw?.length || 0, "/", v1Data?.length || 0)
-  console.log("  - V2データ件数 (ソート前/後):", v2DataRaw?.length || 0, "/", v2Data?.length || 0)
-  
-  // データ不整合の詳細分析
-  if (allData && totalCount && allData.length !== totalCount) {
-    console.warn("⚠️ データ不整合検出:")
-    console.warn("  - DB総件数:", totalCount)
-    console.warn("  - 取得件数:", allData.length)
-    console.warn("  - 差分:", Math.abs((totalCount || 0) - allData.length))
+  // デバッグ情報（必要時のみ）
+  if (process.env.NODE_ENV === 'development') {
+    console.log("Admin データ概要:", {
+      totalCount,
+      v1Count: v1Data?.length || 0,
+      v2Count: v2Data?.length || 0,
+      v3Count: v3Data?.length || 0,
+      v3Data: v3Data?.slice(0, 2) // 最初の2件のサンプル
+    })
   }
-  console.log("V2データの詳細:", v2Data)
-  console.log("V2データの最新3件のupdated_at:", v2Data.slice(0, 3).map(d => ({ id: d.user_id, updated_at: d.updated_at })))
-  console.log("全データのversion_type一覧:", allData?.map(row => `${row.user_id}: ${row.version_type}`))
-  console.log("V2データのfinal_type一覧:", v2DataRaw?.map(row => ({ id: row.user_id, final_type: row.final_type, simple_type: row.simple_type })))
-  console.log("診断エラーのV2データ:", allData?.filter(row => row.version_type === 'v2' && row.final_type?.includes('診断エラー')))
-  console.log("V2データサンプル:", v2Data?.[0])
-  console.log("最新3件のデータ詳細:", allData?.slice(0, 3).map(row => ({
-    user_id: row.user_id, 
-    version_type: row.version_type, 
-    final_type: row.final_type
-  })))
 
   return (
     <div className="space-y-8">
       {/* ページ制御ヘッダー */}
       <RefreshControls />
+
+      {/* V3統計ダッシュボード */}
+      {v3Stats && (
+        <div>
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <span className="px-3 py-1 bg-emerald-500 text-white rounded-full text-sm font-bold">V3</span>
+            V3診断システム 統計
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-emerald-700">{v3Stats.totalDiagnoses}</div>
+              <div className="text-sm text-emerald-600">総診断数</div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-blue-700">{v3Stats.completedDiagnoses}</div>
+              <div className="text-sm text-blue-600">完了診断数</div>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-yellow-700">{v3Stats.averageQuestions}</div>
+              <div className="text-sm text-yellow-600">平均回答数</div>
+            </div>
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-purple-700">{v3Stats.completionRate}%</div>
+              <div className="text-sm text-purple-600">完了率</div>
+            </div>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-orange-700">{v3Stats.partialDiagnosisUsage}%</div>
+              <div className="text-sm text-orange-600">途中診断利用率</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* V3診断データ */}
+      <div>
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <span className="px-3 py-1 bg-emerald-500 text-white rounded-full text-sm font-bold">V3</span>
+          V3診断一覧（最新 100 件）
+          <span className="text-sm font-normal text-gray-600">- {v3Data?.length || 0}件</span>
+        </h2>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-emerald-100 text-xs">
+              <tr>
+                <th className="p-2">SessionID</th>
+                <th className="p-2">Q1回答（抜粋）</th>
+                <th className="p-2">回答数</th>
+                <th className="p-2">完了状況</th>
+                <th className="p-2">診断タイプ</th>
+                <th className="p-2">途中診断回数</th>
+                <th className="p-2">最終更新</th>
+                <th className="p-2">詳細</th>
+              </tr>
+            </thead>
+            <tbody>
+              {v3Data && v3Data.length > 0 ? v3Data.map((row) => (
+                <tr key={row.session_id} className="border-t border-emerald-200 hover:bg-emerald-50">
+                  <td className="p-2 font-mono text-xs" title={row.session_id}>
+                    {row.session_id.substring(0, 12)}...
+                  </td>
+                  <td className="p-2 text-xs">
+                    {row.q1_text ? (
+                      <div className="max-w-48 truncate text-gray-700" title={row.q1_text}>
+                        {row.q1_text.substring(0, 50)}
+                        {row.q1_text.length > 50 ? '...' : ''}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 italic">未回答</span>
+                    )}
+                  </td>
+                  <td className="p-2">
+                    <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-medium">
+                      {row.completed_questions || 0}/{row.total_questions || 10}
+                    </span>
+                  </td>
+                  <td className="p-2">
+                    {row.is_completed ? (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                        完了
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
+                        進行中
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-2">
+                    <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-medium">
+                      {row.final_result?.resultType || 
+                       (row.partial_results && Array.isArray(row.partial_results) && row.partial_results.length > 0 
+                         ? row.partial_results[row.partial_results.length - 1]?.resultType 
+                         : '未診断')}
+                    </span>
+                  </td>
+                  <td className="p-2 text-center">
+                    {Array.isArray(row.partial_results) ? row.partial_results.length : 0}回
+                  </td>
+                  <td className="p-2 text-xs">
+                    {new Date(row.updated_at).toLocaleString("ja-JP")}
+                  </td>
+                  <td className="p-2">
+                    <Link
+                      href={`/admin/v3/${row.session_id}`}
+                      className="text-blue-600 hover:underline text-xs font-medium px-2 py-1 bg-blue-50 rounded"
+                    >
+                      詳細
+                    </Link>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={8} className="p-4 text-center text-gray-500">
+                    {v3Data === null ? 'データ読み込み中...' : 'V3診断データがありません'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-2 text-xs text-gray-600">
+          ※ V3診断: 全テキスト回答形式、途中診断対応 | Q1回答で内容を把握可能
+        </div>
+      </div>
 
       {/* サービスクリック統計 */}
       <div>
