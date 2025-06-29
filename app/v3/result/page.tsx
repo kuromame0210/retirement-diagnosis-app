@@ -573,9 +573,9 @@ function V3ResultPageContent() {
   const canContinue = session && session.completedQuestions < session.totalQuestions
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 px-4 sm:px-6 lg:px-8">
       {/* 結果ヘッダー */}
-      <div className="text-center space-y-4">
+      <div className="text-center space-y-3 sm:space-y-4">
         <div className="flex items-center justify-center gap-2">
           <Badge 
             variant="outline" 
@@ -593,7 +593,7 @@ function V3ResultPageContent() {
           </Badge>
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+        <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 px-4">
           {diagnosisResult.resultType}
         </h1>
       </div>
@@ -714,19 +714,19 @@ function V3ResultPageContent() {
 
           {/* おすすめサービスセクション */}
           <div className="space-y-6 border-t pt-6">
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-semibold text-gray-800 flex items-center justify-center gap-2">
-                🎯 あなたにおすすめのサービス
-              </h3>
-              <p className="text-sm text-gray-600">Claude AIが診断結果に基づいて厳選</p>
-              {serviceRecommendations.length > 0 && (
-                <p className="text-sm text-gray-500">
-                  合計 {serviceRecommendations.length} 件 | 
-                  緊急: {serviceRecommendations.filter(r => r.priority === 'urgent').length} | 
-                  推奨: {serviceRecommendations.filter(r => r.priority === 'recommended').length} | 
-                  検討: {serviceRecommendations.filter(r => r.priority === 'consider').length}
-                </p>
-              )}
+            <div className="text-center space-y-3">
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">🏆</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  おすすめサービス TOP3
+                </h3>
+                <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">🏆</span>
+                </div>
+              </div>
+
             </div>
 
             {isLoadingServices ? (
@@ -737,86 +737,283 @@ function V3ResultPageContent() {
                 </div>
               </div>
             ) : serviceRecommendations.length > 0 ? (
-              <div className="space-y-8">
-                {/* 緊急度高 */}
-                {serviceRecommendations.filter(rec => rec.priority === 'urgent').length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-red-500" />
-                      <h4 className="text-lg font-semibold text-red-700">緊急対応推奨</h4>
-                      <Badge variant="destructive" className="text-xs">
-                        {serviceRecommendations.filter(rec => rec.priority === 'urgent').length}件
-                      </Badge>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {serviceRecommendations
-                        .filter(rec => rec.priority === 'urgent')
-                        .map((recommendation) => (
-                          <ServiceCard 
-                            key={recommendation.service.id} 
-                            recommendation={recommendation} 
-                            onServiceClick={handleServiceClick}
-                            isUrgent={true}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* 推奨 */}
-                {serviceRecommendations.filter(rec => rec.priority === 'recommended').length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Star className="w-5 h-5 text-yellow-500" />
-                      <h4 className="text-lg font-semibold text-yellow-700">おすすめ</h4>
-                      <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-700">
-                        {serviceRecommendations.filter(rec => rec.priority === 'recommended').length}件
-                      </Badge>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {serviceRecommendations
-                        .filter(rec => rec.priority === 'recommended')
-                        .map((recommendation) => (
-                          <ServiceCard 
-                            key={recommendation.service.id} 
-                            recommendation={recommendation} 
-                            onServiceClick={handleServiceClick}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* 検討対象 */}
-                {serviceRecommendations.filter(rec => rec.priority === 'consider').length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-blue-500" />
-                      <h4 className="text-lg font-semibold text-blue-700">検討対象</h4>
-                      <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700">
-                        {serviceRecommendations.filter(rec => rec.priority === 'consider').length}件
-                      </Badge>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {serviceRecommendations
-                        .filter(rec => rec.priority === 'consider')
-                        .map((recommendation) => (
-                          <ServiceCard 
-                            key={recommendation.service.id} 
-                            recommendation={recommendation} 
-                            onServiceClick={handleServiceClick}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                )}
+              <div className="space-y-6">
+                {/* TOP3ランキング表示 */}
+                <div className="space-y-4 sm:space-y-6">
+                  {serviceRecommendations.slice(0, 3).map((recommendation, index) => {
+                    const rank = index + 1;
+                    const isFirst = rank === 1;
+                    const isSecond = rank === 2;
+                    const isThird = rank === 3;
+                    
+                    return (
+                      <div key={recommendation.service.id}>
+                        
+                        {/* デスクトップ版（従来）*/}
+                        <div className={`hidden sm:block relative transform transition-all duration-300 hover:scale-[1.02] ${
+                          isFirst ? 'hover:scale-[1.03]' : ''
+                        }`}>
+                          {/* ランキング背景 */}
+                          <div className={`rounded-2xl p-6 border-2 shadow-lg ${
+                            isFirst 
+                              ? 'bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 border-yellow-400 shadow-yellow-200/50' 
+                              : isSecond 
+                              ? 'bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 border-gray-400 shadow-gray-200/50'
+                              : 'bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-50 border-orange-400 shadow-orange-200/50'
+                          }`}>
+                            
+                            {/* ランキングヘッダー */}
+                            <div className="flex items-center gap-4 mb-6">
+                              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
+                                isFirst 
+                                  ? 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500' 
+                                  : isSecond 
+                                  ? 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600'
+                                  : 'bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-600'
+                              }`}>
+                                {isFirst ? '🥇' : isSecond ? '🥈' : '🥉'}
+                              </div>
+                              
+                              <div className="flex-1">
+                                <div className={`text-2xl font-black mb-1 ${
+                                  isFirst 
+                                    ? 'text-yellow-800' 
+                                    : isSecond 
+                                    ? 'text-gray-700'
+                                    : 'text-orange-800'
+                                }`}>
+                                  {rank}位
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <h4 className="text-xl font-bold text-gray-900">
+                                    {recommendation.service.name}
+                                  </h4>
+                                  <Badge className={`text-sm px-3 py-1 ${
+                                    isFirst 
+                                      ? 'bg-yellow-500 text-white' 
+                                      : isSecond 
+                                      ? 'bg-gray-500 text-white'
+                                      : 'bg-orange-500 text-white'
+                                  }`}>
+                                    {Math.round(recommendation.score * 10) / 10}点
+                                  </Badge>
+                                  {recommendation.priority === 'urgent' && (
+                                    <Badge variant="destructive" className="animate-pulse">
+                                      緊急
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* サービス内容 */}
+                            <div className="grid lg:grid-cols-3 gap-4 mb-6">
+                              {/* サービス画像・説明 */}
+                              <div className="lg:col-span-2 space-y-3">
+                                <p className="text-gray-700 leading-relaxed">
+                                  {recommendation.service.description}
+                                </p>
+                                
+                                {/* AI推薦理由 */}
+                                <div className="bg-white/80 rounded-lg p-3 border border-gray-200">
+                                  <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
+                                    <Brain className="w-4 h-4 text-blue-500" />
+                                    AIの推薦理由
+                                  </h5>
+                                  <p className="text-sm text-gray-700">
+                                    {recommendation.aiReason}
+                                  </p>
+                                </div>
+                                
+                                {/* 期待効果 */}
+                                <div className="bg-white/80 rounded-lg p-3 border border-gray-200">
+                                  <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
+                                    <TrendingUp className="w-4 h-4 text-green-500" />
+                                    期待される効果
+                                  </h5>
+                                  <p className="text-sm text-gray-700">
+                                    {recommendation.expectedOutcome}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* アクションエリア */}
+                              <div className="space-y-4">
+                                {recommendation.service.image && (
+                                  <div className="w-full h-24 rounded-lg overflow-hidden">
+                                    <img 
+                                      src={recommendation.service.image} 
+                                      alt={recommendation.service.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
+                                
+                                <Button
+                                  onClick={() => handleServiceClick(recommendation.service, recommendation)}
+                                  size="lg"
+                                  className={`w-full h-14 text-lg font-bold transition-all duration-200 shadow-lg ${
+                                    isFirst 
+                                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white animate-pulse hover:animate-none' 
+                                      : isSecond 
+                                      ? 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white'
+                                      : 'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white'
+                                  }`}
+                                >
+                                  {isFirst ? '🏆 1位をチェック！' : `${rank}位を見る`}
+                                  <ExternalLink className="w-5 h-5 ml-2" />
+                                </Button>
+                                
+                                {/* マッチ要因 */}
+                                {recommendation.matchFactors?.length > 0 && (
+                                  <div className="space-y-1">
+                                    <h6 className="text-xs font-medium text-gray-600">マッチ要因</h6>
+                                    <div className="flex flex-wrap gap-1">
+                                      {recommendation.matchFactors.slice(0, 2).map((factor: string, factorIndex: number) => (
+                                        <Badge 
+                                          key={factorIndex} 
+                                          variant="secondary" 
+                                          className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600"
+                                        >
+                                          {factor}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* モバイル版（シンプル）*/}
+                        <div className={`sm:hidden rounded-xl border-2 shadow-lg overflow-hidden ${
+                          isFirst 
+                            ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-400' 
+                            : isSecond 
+                            ? 'bg-gradient-to-r from-gray-50 to-blue-50 border-gray-400'
+                            : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-400'
+                        }`}>
+                          
+                          {/* モバイルヘッダー */}
+                          <div className="p-4 border-b border-gray-200">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                                isFirst 
+                                  ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                                  : isSecond 
+                                  ? 'bg-gradient-to-br from-gray-400 to-gray-600'
+                                  : 'bg-gradient-to-br from-orange-400 to-yellow-600'
+                              }`}>
+                                {isFirst ? '🥇' : isSecond ? '🥈' : '🥉'}
+                              </div>
+                              
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`text-lg font-bold ${
+                                    isFirst ? 'text-yellow-800' : isSecond ? 'text-gray-700' : 'text-orange-800'
+                                  }`}>
+                                    {rank}位
+                                  </span>
+                                  <Badge className={`text-xs px-2 py-1 ${
+                                    isFirst 
+                                      ? 'bg-yellow-500 text-white' 
+                                      : isSecond 
+                                      ? 'bg-gray-500 text-white'
+                                      : 'bg-orange-500 text-white'
+                                  }`}>
+                                    {Math.round(recommendation.score * 10) / 10}点
+                                  </Badge>
+                                  {recommendation.priority === 'urgent' && (
+                                    <Badge variant="destructive" className="text-xs animate-pulse">
+                                      緊急
+                                    </Badge>
+                                  )}
+                                </div>
+                                <h4 className="text-sm font-bold text-gray-900 leading-tight">
+                                  {recommendation.service.name}
+                                </h4>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* モバイルコンテンツ */}
+                          <div className="p-4 space-y-3">
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {recommendation.service.description}
+                            </p>
+                            
+                            {/* AI推薦理由（簡略版） */}
+                            <div className="bg-white/80 rounded-lg p-3">
+                              <p className="text-xs text-gray-600 mb-1">
+                                <Brain className="w-3 h-3 inline mr-1" />
+                                AIの推薦理由
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                {recommendation.aiReason}
+                              </p>
+                            </div>
+                            
+                            {/* マッチ要因 */}
+                            {recommendation.matchFactors?.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {recommendation.matchFactors.slice(0, 2).map((factor: string, factorIndex: number) => (
+                                  <Badge 
+                                    key={factorIndex} 
+                                    variant="secondary" 
+                                    className="text-xs px-2 py-1 bg-gray-100 text-gray-600"
+                                  >
+                                    {factor}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* モバイルボタン */}
+                            <Button
+                              onClick={() => handleServiceClick(recommendation.service, recommendation)}
+                              className={`w-full h-11 text-sm font-bold transition-all duration-200 shadow-lg ${
+                                isFirst 
+                                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white' 
+                                  : isSecond 
+                                  ? 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white'
+                                  : 'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white'
+                              }`}
+                            >
+                              {isFirst ? '🏆 1位をチェック！' : `${rank}位を見る`}
+                              <ExternalLink className="w-4 h-4 ml-2" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
                 {/* 選択のヒント */}
-                <div className="text-center p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
-                  <h5 className="font-medium text-green-800 mb-1">💡 サービス選択のヒント</h5>
-                  <p className="text-sm text-green-700">
-                    迷ったときは1位のサービスからチェックしてみてください
-                  </p>
+                <div className="text-center p-4 sm:p-6 bg-gradient-to-r from-green-50 via-blue-50 to-green-50 rounded-2xl border-2 border-green-200">
+                  <div className="space-y-3">
+                    <h5 className="text-lg sm:text-xl font-bold text-green-800 flex items-center justify-center gap-2">
+                      💡 おすすめの活用方法
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
+                      <div className="bg-white/80 rounded-lg p-3">
+                        <div className="text-2xl mb-2">🥇</div>
+                        <p className="font-medium text-green-800">1位は最優先</p>
+                        <p className="text-green-700">あなたに最も適したサービスです</p>
+                      </div>
+                      <div className="bg-white/80 rounded-lg p-3">
+                        <div className="text-2xl mb-2">🔄</div>
+                        <p className="font-medium text-green-800">複数比較</p>
+                        <p className="text-green-700">2位、3位も合わせて検討してみてください</p>
+                      </div>
+                      <div className="bg-white/80 rounded-lg p-3">
+                        <div className="text-2xl mb-2">⏰</div>
+                        <p className="font-medium text-green-800">タイミング重視</p>
+                        <p className="text-green-700">緊急度に応じて行動してください</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (

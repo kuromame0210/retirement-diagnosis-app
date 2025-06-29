@@ -91,27 +91,25 @@ export default function V3MainPage() {
     <div className="space-y-8">
       {/* ヒーローセクション */}
       <div className="text-center space-y-6">
-        <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-100 to-blue-100 border border-green-200 text-green-700 rounded-full text-sm font-medium shadow-lg">
-          <MessageSquareText className="w-4 h-4 mr-2" />
-          10問、３分。次のキャリアを無料で診断
-        </div>
-        
-        <h1 className="text-3xl md:text-5xl font-black text-gray-900 leading-tight">
-          
-          <span className="block text-3xl md:text-4xl font-bold text-gray-800">
-            Claude AIでキャリア診断
-          </span>
+        <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-gray-900 leading-tight">
+          最短5分でキャリア診断
         </h1>
         
-        <p className="text-xl md:text-2xl text-gray-700 mb-4 font-semibold">
-          選択肢回答では計りきれないあなたの状況を解析
+        <p className="text-lg sm:text-xl md:text-2xl text-gray-700 mb-4 font-semibold">
+          <span className="block sm:inline">あなたの状況と理想のライフスタイルをAIが解析。</span>
+          <span className="block sm:inline">あなたに最適なアドバイスを行います。</span>
         </p>
         
-        <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto leading-relaxed">
-          最新AI「<strong className="text-blue-600">Claude 3.5 Sonnet</strong>」が、言葉のニュアンスまで拾ってくれるので、
-          あなたの状況、迷っていることへのアドバイスをくれます。<br />
-          <strong className="text-gray-800">テキストで深掘り、適切な結果を提供</strong>。
-        </p>
+        <div className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto leading-relaxed space-y-2 px-4">
+          <p>
+            <span className="block sm:inline">疲れたら途中で回答を辞めてもOK。</span>
+            <span className="block sm:inline">診断結果は出ます。</span>
+          </p>
+          <p>
+            <span className="block sm:inline"><strong className="text-gray-800">でも....</strong></span>
+            <span className="block sm:inline">より多くの質問にお答えいただくと、精度の高いアドバイスを得られます。</span>
+          </p>
+        </div>
         
         {/* 進行中の診断がある場合 */}
         {hasInProgress && (
@@ -185,19 +183,19 @@ export default function V3MainPage() {
 
         {/* 診断開始ボタン */}
         {!hasInProgress && (
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-lg mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center max-w-lg mx-auto px-4">
             <Link href="/v3/diagnosis" className="w-full sm:w-auto">
               <Button 
                 size="lg" 
                 onClick={handleStartDiagnosis}
-                className="w-full sm:w-auto text-lg font-bold px-8 py-4 h-auto bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 hover:from-green-600 hover:via-blue-600 hover:to-purple-600 text-white border-0 rounded-lg relative overflow-hidden shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 transition-all duration-200"
+                className="w-full sm:w-auto text-base sm:text-lg font-bold px-6 sm:px-8 py-3 sm:py-4 h-auto bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 hover:from-green-600 hover:via-blue-600 hover:to-purple-600 text-white border-0 rounded-lg relative overflow-hidden shadow-2xl hover:shadow-green-500/50 transform hover:scale-105 transition-all duration-200"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-700"></div>
                 <div className="relative flex items-center justify-center">
-                  <FileText className="w-5 h-5 mr-2" />
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   <span className="hidden sm:inline">無料で診断スタート</span>
                   <span className="sm:hidden">診断スタート</span>
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
                 </div>
               </Button>
             </Link>
@@ -223,27 +221,29 @@ export default function V3MainPage() {
 
 
       {/* 選ばれる理由 */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card className="text-center hover:shadow-lg transition-shadow duration-200 border-0 shadow-md">
-          <CardHeader className="pb-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MessageSquareText className="w-8 h-8 text-green-600" />
+          <CardHeader className="pb-3 sm:pb-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <MessageSquareText className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
             </div>
-            <CardTitle className="text-xl mb-2">テキストで深掘り</CardTitle>
-            <CardDescription className="text-gray-600 leading-relaxed">
-              あなたの状況、悩み、迷いを<br />文章で詳しく教えてください。
+            <CardTitle className="text-lg sm:text-xl mb-1 sm:mb-2">テキストで深掘り</CardTitle>
+            <CardDescription className="text-sm sm:text-base text-gray-600 leading-relaxed">
+              <span className="block sm:inline">あなたの状況、悩み、迷いを</span>
+              <span className="block sm:inline">文章で詳しく教えてください。</span>
             </CardDescription>
           </CardHeader>
         </Card>
         
         <Card className="text-center hover:shadow-lg transition-shadow duration-200 border-0 shadow-md">
-          <CardHeader className="pb-4">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Brain className="w-8 h-8 text-blue-600" />
+          <CardHeader className="pb-3 sm:pb-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
             </div>
-            <CardTitle className="text-xl mb-2">Claudeが解析</CardTitle>
-            <CardDescription className="text-gray-600 leading-relaxed">
-              AIがあなたの悩みを深く理解し、<br />どうすればいいか適切にアドバイス。
+            <CardTitle className="text-lg sm:text-xl mb-1 sm:mb-2">Claudeが解析</CardTitle>
+            <CardDescription className="text-sm sm:text-base text-gray-600 leading-relaxed">
+              <span className="block sm:inline">AIがあなたの悩みを深く理解し、</span>
+              <span className="block sm:inline">どうすればいいか適切にアドバイス。</span>
             </CardDescription>
           </CardHeader>
         </Card>

@@ -39,26 +39,91 @@ export interface V3DiagnosisResult {
   // メイン分析
   summary: string
   detailed_analysis: {
-    emotional_state: string        // 感情状態
-    stress_factors: string[]       // ストレス要因
-    motivation_level: string       // モチベーション状態
-    career_concerns: string[]      // キャリア不安
-    work_environment: string       // 職場環境
-    future_outlook: string         // 将来への見通し
+    emotional_state: string        // 感情状態の詳細分析
+    stress_factors: string[]       // ストレス要因の具体的な分析
+    motivation_level: string       // モチベーション状態の深い洞察
+    career_concerns: string[]      // キャリア不安の根本原因
+    work_environment: string       // 職場環境の詳細評価
+    future_outlook: string         // 将来への見通しと具体的な予測
+    psychological_impact: string   // 心理的影響の分析
+    skill_assessment: string       // スキル・強みの客観的評価
+    market_positioning: string     // 転職市場での位置づけ分析
   }
   
-  // アクションプラン
+  // 多角的洞察
+  multifaceted_insights: {
+    psychological_perspective: string    // 心理学的洞察
+    strategic_perspective: string        // 戦略的洞察
+    economic_perspective: string         // 経済的洞察
+    life_design_perspective: string      // ライフデザイン洞察
+    organizational_perspective: string   // 組織行動学的洞察
+    market_trends_perspective: string    // 市場動向洞察
+  }
+
+  // シナリオプランニング
+  scenario_planning: {
+    stay_current_scenario: {
+      probability: string
+      outcomes: string[]
+      risks: string[]
+      success_factors: string[]
+    }
+    job_change_scenario: {
+      probability: string
+      outcomes: string[]
+      risks: string[]
+      success_factors: string[]
+    }
+    hybrid_scenario: {
+      probability: string
+      outcomes: string[]
+      risks: string[]
+      success_factors: string[]
+    }
+  }
+  
+  // アクションプラン（詳細版）
   action_plan: {
-    immediate_actions: string[]    // 即座に取るべき行動
-    short_term_goals: string[]     // 短期目標（1-3ヶ月）
-    long_term_goals: string[]      // 長期目標（6ヶ月-1年）
+    immediate_actions: Array<{
+      action: string
+      reason: string
+      timeline: string
+      difficulty_level: 'easy' | 'medium' | 'hard'
+      expected_impact: string
+    }>
+    short_term_goals: Array<{
+      goal: string
+      specific_steps: string[]
+      success_metrics: string
+      timeline: string
+      resources_needed: string[]
+    }>
+    long_term_goals: Array<{
+      goal: string
+      milestone_breakdown: string[]
+      potential_obstacles: string[]
+      success_criteria: string
+      timeline: string
+    }>
   }
   
-  // サービス推奨
+  // 業界・職種別アドバイス
+  industry_specific_advice: {
+    current_industry_trends: string
+    transferable_skills: string[]
+    recommended_career_paths: string[]
+    skill_gap_analysis: string
+    market_demand_insights: string
+  }
+  
+  // サービス推奨（詳細版）
   service_recommendations: Array<{
-    category: 'transfer_agent' | 'skill_up' | 'career_counseling' | 'stress_management'
+    category: 'transfer_agent' | 'skill_up' | 'career_counseling' | 'stress_management' | 'financial_planning' | 'networking'
     priority: 'high' | 'medium' | 'low'
     reason: string
+    specific_services: string[]
+    timing_recommendation: string
+    expected_outcomes: string
   }>
   
   // 診断メタデータ
@@ -129,36 +194,130 @@ function prepareAnswersForAnalysis(request: V3DiagnosisRequest): string {
 }
 
 /**
- * Claude AI分析プロンプトの構築（超高速版）
+ * Claude AI分析プロンプトの構築（多角的詳細分析版）
  */
 function buildDiagnosisPrompt(answers: string, diagnosisType: 'partial' | 'final', answeredQuestions: number): string {
-  const basePrompt = `退職診断を実行してください。
+  const basePrompt = `あなたは複数の専門領域を持つキャリアコンサルティングチームです。以下の回答を基に、多角的な視点から深く詳細なキャリア診断を実行してください。
 
+【回答データ】
 ${answers}
 
-タイプ選択: 転職推奨型/転職検討型/現職改善型/様子見型/要注意型
+【分析チーム構成】
+- 心理カウンセラー: メンタルヘルス・感情状態の専門家
+- キャリアアドバイザー: 転職・昇進戦略の専門家  
+- 産業心理学者: 職場環境・組織文化の専門家
+- ファイナンシャルプランナー: 経済面・ライフプラン設計の専門家
+- ライフコーチ: ワークライフバランス・人生設計の専門家
+- 業界アナリスト: 市場動向・将来性分析の専門家
 
-JSON回答:
+【多角的診断要件】
+1. 心理学的視点: 感情パターン、ストレス反応、回復力、モチベーション源の分析
+2. キャリア戦略視点: スキル棚卸し、市場価値、成長軌道、競争優位性の評価
+3. 組織行動学視点: 職場適応性、コミュニケーションスタイル、リーダーシップ適性
+4. 経済学的視点: 収入最適化、投資価値、機会コスト、リスク・リターン分析
+5. ライフデザイン視点: 人生価値観、ライフステージ、家族・社会との調和
+6. 業界・市場視点: トレンド分析、将来性予測、ポジショニング戦略
+
+【統合的診断アプローチ】
+- 短期・中期・長期の3層時間軸での分析
+- リスク要因と機会要因の両面評価  
+- 複数のシナリオプランニング
+- 意思決定のための判断基準明示
+- 回答者の価値観・性格に基づく個別最適化
+
+【診断タイプ】: 転職推奨型/転職検討型/現職改善型/様子見型/要注意型
+
+【回答形式】: 以下のJSONフォーマットで多角的に詳細回答してください
+
 {
-  "result_type": "タイプ",
-  "confidence_level": "medium",
-  "urgency_level": "medium", 
-  "summary": "100字以内の要約とアドバイス",
+  "result_type": "診断タイプ",
+  "confidence_level": "low/medium/high",
+  "urgency_level": "low/medium/high",
+  "summary": "統合的診断結果の要約（200-250字）",
   "detailed_analysis": {
-    "emotional_state": "感情状態",
-    "stress_factors": ["要因1"],
-    "motivation_level": "モチベーション", 
-    "career_concerns": ["不安1"],
-    "work_environment": "職場環境",
-    "future_outlook": "将来見通し"
+    "emotional_state": "心理カウンセラー視点：感情状態の詳細分析（現在の精神的負荷、ストレス反応、回復力、感情調整能力）",
+    "stress_factors": ["ストレス要因の多層分析", "トリガー特定と対処戦略", "予防的アプローチ"],
+    "motivation_level": "モチベーション源の深層分析（内発的・外発的動機、持続要因、エネルギー回復方法）",
+    "career_concerns": ["キャリア不安の根本分析", "市場変化への適応課題", "スキル陳腐化リスク"],
+    "work_environment": "産業心理学者視点：職場環境の包括評価（組織文化適合性、人間関係動態、成長機会、改善可能性）",
+    "future_outlook": "3つのシナリオ予測（楽観・現実・悲観シナリオでの将来予測）",
+    "psychological_impact": "心理的影響の多面分析（自己効力感、自尊心、アイデンティティ、メンタルヘルス）",
+    "skill_assessment": "キャリアアドバイザー視点：スキル・強みの戦略的評価（市場価値、希少性、発展可能性）",
+    "market_positioning": "業界アナリスト視点：転職市場でのポジショニング分析（競争環境、差別化要因、市場機会）"
+  },
+  "multifaceted_insights": {
+    "psychological_perspective": "心理学的洞察（性格特性、行動パターン、ストレス耐性、成長マインドセット）",
+    "strategic_perspective": "戦略的洞察（キャリア戦略、競争優位性確立、ポートフォリオ構築）",
+    "economic_perspective": "ファイナンシャルプランナー視点：経済的洞察（収入最適化、投資価値、機会コスト分析）",
+    "life_design_perspective": "ライフコーチ視点：人生設計洞察（価値観整合性、ライフバランス、長期幸福度）",
+    "organizational_perspective": "組織行動学的洞察（リーダーシップ適性、チーム適合性、企業文化マッチング）",
+    "market_trends_perspective": "市場動向洞察（業界トレンド、技術変化、将来需要予測）"
+  },
+  "scenario_planning": {
+    "stay_current_scenario": {
+      "probability": "現職継続シナリオの実現可能性（%）",
+      "outcomes": ["予想される結果1", "予想される結果2"],
+      "risks": ["主要リスク1", "主要リスク2"],
+      "success_factors": ["成功要因1", "成功要因2"]
+    },
+    "job_change_scenario": {
+      "probability": "転職シナリオの実現可能性（%）",
+      "outcomes": ["予想される結果1", "予想される結果2"],
+      "risks": ["主要リスク1", "主要リスク2"],
+      "success_factors": ["成功要因1", "成功要因2"]
+    },
+    "hybrid_scenario": {
+      "probability": "段階的変化シナリオの実現可能性（%）",
+      "outcomes": ["予想される結果1", "予想される結果2"],
+      "risks": ["主要リスク1", "主要リスク2"],
+      "success_factors": ["成功要因1", "成功要因2"]
+    }
   },
   "action_plan": {
-    "immediate_actions": ["行動1"],
-    "short_term_goals": ["目標1"], 
-    "long_term_goals": ["目標1"]
+    "immediate_actions": [
+      {
+        "action": "即座に取るべき具体的行動",
+        "reason": "なぜこの行動が必要か",
+        "timeline": "実行期間",
+        "difficulty_level": "easy/medium/hard",
+        "expected_impact": "期待される効果"
+      }
+    ],
+    "short_term_goals": [
+      {
+        "goal": "1-3ヶ月の短期目標",
+        "specific_steps": ["具体的ステップ1", "具体的ステップ2"],
+        "success_metrics": "成功指標",
+        "timeline": "達成期限",
+        "resources_needed": ["必要リソース1", "必要リソース2"]
+      }
+    ],
+    "long_term_goals": [
+      {
+        "goal": "6ヶ月-1年の長期目標",
+        "milestone_breakdown": ["マイルストーン1", "マイルストーン2"],
+        "potential_obstacles": ["予想される障害1", "対処法"],
+        "success_criteria": "成功基準",
+        "timeline": "達成期限"
+      }
+    ]
+  },
+  "industry_specific_advice": {
+    "current_industry_trends": "業界の最新動向と将来性",
+    "transferable_skills": ["他業界で活用可能なスキル1", "スキル2"],
+    "recommended_career_paths": ["推奨キャリアパス1", "パス2"],
+    "skill_gap_analysis": "スキルギャップと習得優先度",
+    "market_demand_insights": "市場需要の分析と今後の展望"
   },
   "service_recommendations": [
-    {"category": "transfer_agent", "priority": "high", "reason": "理由"}
+    {
+      "category": "transfer_agent/skill_up/career_counseling/stress_management/financial_planning/networking",
+      "priority": "high/medium/low",
+      "reason": "推奨理由の詳細",
+      "specific_services": ["具体的サービス1", "サービス2"],
+      "timing_recommendation": "利用タイミング",
+      "expected_outcomes": "期待される成果"
+    }
   ]
 }`
   
@@ -258,7 +417,38 @@ function parseAIResponse(response: string, request: V3DiagnosisRequest): V3Diagn
         motivation_level: parsed.detailed_analysis?.motivation_level || '分析中',
         career_concerns: parsed.detailed_analysis?.career_concerns || [],
         work_environment: parsed.detailed_analysis?.work_environment || '分析中',
-        future_outlook: parsed.detailed_analysis?.future_outlook || '分析中'
+        future_outlook: parsed.detailed_analysis?.future_outlook || '分析中',
+        psychological_impact: parsed.detailed_analysis?.psychological_impact || '分析中',
+        skill_assessment: parsed.detailed_analysis?.skill_assessment || '分析中',
+        market_positioning: parsed.detailed_analysis?.market_positioning || '分析中'
+      },
+      multifaceted_insights: {
+        psychological_perspective: parsed.multifaceted_insights?.psychological_perspective || '心理学的分析を実行中',
+        strategic_perspective: parsed.multifaceted_insights?.strategic_perspective || '戦略的分析を実行中',
+        economic_perspective: parsed.multifaceted_insights?.economic_perspective || '経済的分析を実行中',
+        life_design_perspective: parsed.multifaceted_insights?.life_design_perspective || 'ライフデザイン分析を実行中',
+        organizational_perspective: parsed.multifaceted_insights?.organizational_perspective || '組織行動学的分析を実行中',
+        market_trends_perspective: parsed.multifaceted_insights?.market_trends_perspective || '市場動向分析を実行中'
+      },
+      scenario_planning: {
+        stay_current_scenario: {
+          probability: parsed.scenario_planning?.stay_current_scenario?.probability || '分析中',
+          outcomes: parsed.scenario_planning?.stay_current_scenario?.outcomes || ['現職継続の結果を分析中'],
+          risks: parsed.scenario_planning?.stay_current_scenario?.risks || ['リスク分析中'],
+          success_factors: parsed.scenario_planning?.stay_current_scenario?.success_factors || ['成功要因分析中']
+        },
+        job_change_scenario: {
+          probability: parsed.scenario_planning?.job_change_scenario?.probability || '分析中',
+          outcomes: parsed.scenario_planning?.job_change_scenario?.outcomes || ['転職の結果を分析中'],
+          risks: parsed.scenario_planning?.job_change_scenario?.risks || ['リスク分析中'],
+          success_factors: parsed.scenario_planning?.job_change_scenario?.success_factors || ['成功要因分析中']
+        },
+        hybrid_scenario: {
+          probability: parsed.scenario_planning?.hybrid_scenario?.probability || '分析中',
+          outcomes: parsed.scenario_planning?.hybrid_scenario?.outcomes || ['段階的変化の結果を分析中'],
+          risks: parsed.scenario_planning?.hybrid_scenario?.risks || ['リスク分析中'],
+          success_factors: parsed.scenario_planning?.hybrid_scenario?.success_factors || ['成功要因分析中']
+        }
       },
       action_plan: {
         immediate_actions: parsed.action_plan?.immediate_actions || [],
@@ -280,36 +470,101 @@ function parseAIResponse(response: string, request: V3DiagnosisRequest): V3Diagn
 }
 
 /**
- * フォールバック診断結果の作成
+ * フォールバック診断結果の作成（多角的版）
  */
 function createFallbackDiagnosis(request: V3DiagnosisRequest): V3DiagnosisResult {
   return {
     result_type: '現職改善型',
     confidence_level: 'low',
     urgency_level: 'medium',
-    summary: 'システムエラーのため詳細な分析ができませんでした。回答内容を確認し、必要に応じて専門家にご相談ください。',
+    summary: 'システムエラーのため詳細な分析ができませんでしたが、基本的な方向性をご提案いたします。より詳細な分析については、時間をおいて再度お試しいただくか、専門家にご相談ください。',
     detailed_analysis: {
-      emotional_state: '分析できませんでした',
-      stress_factors: ['システムエラー'],
-      motivation_level: '分析できませんでした',
-      career_concerns: ['詳細分析が必要'],
-      work_environment: '分析できませんでした',
-      future_outlook: '個別相談を推奨'
+      emotional_state: '現在の状況を総合的に見直し、ストレス要因の特定と対処方法を検討することをお勧めします。',
+      stress_factors: ['システム分析制限', '詳細分析が必要'],
+      motivation_level: 'ご自身の価値観と現在の環境の適合性を改めて評価してみてください。',
+      career_concerns: ['キャリア方向性の明確化が必要', '市場価値の客観的評価が重要'],
+      work_environment: '現在の職場環境について、改善可能な点と難しい点を整理することが有効です。',
+      future_outlook: '複数のシナリオを想定した計画的なアプローチをお勧めします。',
+      psychological_impact: 'メンタルヘルスの維持を最優先に、無理のない範囲での行動計画が重要です。',
+      skill_assessment: '現在のスキルの棚卸しと、市場での競争力評価を行うことをお勧めします。',
+      market_positioning: '業界動向と個人のポジションを客観的に分析することが必要です。'
+    },
+    multifaceted_insights: {
+      psychological_perspective: 'ストレス管理と心理的安定を基盤とした意思決定が重要です。急激な変化よりも段階的なアプローチを検討してください。',
+      strategic_perspective: '現状維持、段階的改善、環境変化の3つの選択肢を比較検討し、リスクとリターンを評価することをお勧めします。',
+      economic_perspective: '短期的な経済的安定と長期的な成長可能性のバランスを考慮した計画を立てることが重要です。',
+      life_design_perspective: 'キャリアだけでなく、人生全体の価値観と優先順位を整理し、統合的な人生設計を検討してください。',
+      organizational_perspective: '現在の組織文化との適合性と、理想的な働き方について深く考察することをお勧めします。',
+      market_trends_perspective: '業界の将来性と個人のスキル発展方向を照らし合わせた戦略的思考が必要です。'
+    },
+    scenario_planning: {
+      stay_current_scenario: {
+        probability: '詳細分析により判定',
+        outcomes: ['現職での成長機会の追求', '段階的な改善による満足度向上'],
+        risks: ['現状の問題の継続', '機会損失の可能性'],
+        success_factors: ['積極的な改善提案', 'スキルアップへの投資']
+      },
+      job_change_scenario: {
+        probability: '個別状況により判定',
+        outcomes: ['新しい環境での成長機会', '理想に近い働き方の実現'],
+        risks: ['適応期間のストレス', '経済的な一時的不安定'],
+        success_factors: ['十分な準備期間', '市場価値の向上']
+      },
+      hybrid_scenario: {
+        probability: '多くの場合で有効',
+        outcomes: ['段階的な変化による安定した移行', 'リスク分散による安心感'],
+        risks: ['変化のスピードが遅い', '中途半端な結果の可能性'],
+        success_factors: ['明確なマイルストーン設定', '柔軟な計画調整']
+      }
     },
     action_plan: {
-      immediate_actions: ['専門家への相談を検討'],
-      short_term_goals: ['状況の整理'],
-      long_term_goals: ['キャリアプランの見直し']
+      immediate_actions: [
+        {
+          action: '現状の客観的な整理と分析',
+          reason: '問題の本質と優先順位を明確にするため',
+          timeline: '1-2週間',
+          difficulty_level: 'easy',
+          expected_impact: '方向性の明確化'
+        }
+      ],
+      short_term_goals: [
+        {
+          goal: '専門家への相談または再診断の実施',
+          specific_steps: ['信頼できる相談先の選定', '具体的な相談内容の準備'],
+          success_metrics: '客観的な第三者視点の獲得',
+          timeline: '1ヶ月以内',
+          resources_needed: ['時間確保', '相談費用の検討']
+        }
+      ],
+      long_term_goals: [
+        {
+          goal: '包括的なキャリア戦略の策定',
+          milestone_breakdown: ['現状分析完了', '選択肢の洗い出し', '実行計画の作成'],
+          potential_obstacles: ['情報不足', '意思決定の迷い'],
+          success_criteria: '具体的で実行可能な行動計画の完成',
+          timeline: '3-6ヶ月'
+        }
+      ]
+    },
+    industry_specific_advice: {
+      current_industry_trends: '詳細分析が制限されているため、業界専門家への相談を推奨します。',
+      transferable_skills: ['詳細分析により特定'],
+      recommended_career_paths: ['個別相談により明確化'],
+      skill_gap_analysis: '専門的な評価が必要です',
+      market_demand_insights: '業界動向の専門的分析を推奨します'
     },
     service_recommendations: [
       {
         category: 'career_counseling',
         priority: 'high',
-        reason: 'システムエラーのため個別相談を推奨'
+        reason: 'システム制限により、専門家による詳細分析が最も有効です',
+        specific_services: ['キャリアカウンセリング', '適性診断'],
+        timing_recommendation: '早期の相談を推奨',
+        expected_outcomes: '客観的分析と具体的方向性の獲得'
       }
     ],
     diagnosed_at: getJSTTimestamp(),
-    diagnosis_version: 'v3.1-fallback',
+    diagnosis_version: 'v3.2-multifaceted-fallback',
     answered_questions: request.answeredQuestions
   }
 }

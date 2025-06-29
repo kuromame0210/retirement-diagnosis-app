@@ -23,7 +23,8 @@
       "Bash(npx ts-node:*)",
       "Bash(ls:*)",
       "Bash(true)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

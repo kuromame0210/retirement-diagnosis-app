@@ -309,9 +309,9 @@ export default function V3DiagnosisPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 px-4 sm:px-6 lg:px-8">
       {/* プログレスヘッダー（整理版） */}
-      <div className="bg-white rounded-lg shadow-sm p-3">
+      <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs px-2 py-1">

@@ -67,11 +67,11 @@ export class V3ServiceRecommendationEngine {
         scores: scoredServices.map(s => ({ name: s.service.name, score: s.score }))
       })
       
-      // 3. スコア順でソート & フィルタリング（最低スコアを0.5に下げる）
+      // 3. スコア順でソート & フィルタリング（TOP3ランキング形式）
       let recommendations = scoredServices
         .filter(rec => rec.score >= 0.5) // 最低スコアを下げる
         .sort((a, b) => b.score - a.score)
-        .slice(0, 8) // 上位8件
+        .slice(0, 3) // TOP3のみ
         .map((rec, index) => ({
           ...rec,
           rank: index + 1
@@ -212,11 +212,11 @@ export class V3ServiceRecommendationEngine {
     // ネガティブ感情
     if (lowerAnswer.includes('ストレス') || lowerAnswer.includes('疲れ') || lowerAnswer.includes('辛い')) {
       if (service.category.includes('退職代行')) {
-        score += 3
+        score += 1.5  // 3 → 1.5 に下げる
         matchFactors.push('高ストレス状態')
       }
       if (service.category.includes('転職支援')) {
-        score += 2
+        score += 3    // 2 → 3 に上げる
         matchFactors.push('転職検討段階')
       }
     }
@@ -254,11 +254,15 @@ export class V3ServiceRecommendationEngine {
     // 人間関係の問題
     if (lowerAnswer.includes('上司') || lowerAnswer.includes('人間関係') || lowerAnswer.includes('パワハラ')) {
       if (service.category.includes('退職代行')) {
-        score += 3
+        score += 1.5  // 3 → 1.5 に下げる
         matchFactors.push('人間関係の悩み')
       }
+      if (service.category.includes('転職支援')) {
+        score += 3    // 転職支援を追加・優先
+        matchFactors.push('環境変化の必要性')
+      }
       if (service.id === 'resort-baito' || service.category.includes('地方転職')) {
-        score += 1.5
+        score += 2    // 1.5 → 2 に上げる
         matchFactors.push('環境変化の必要性')
       }
     }
@@ -270,8 +274,12 @@ export class V3ServiceRecommendationEngine {
         matchFactors.push('ワークライフバランス重視')
       }
       if (service.category.includes('転職支援')) {
-        score += 2
+        score += 3    // 2 → 3 に上げる
         matchFactors.push('労働環境改善')
+      }
+      if (service.category.includes('退職代行')) {
+        score += 1    // 退職代行のスコアを低く設定
+        matchFactors.push('緊急対応')
       }
     }
     
