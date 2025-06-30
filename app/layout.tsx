@@ -15,6 +15,19 @@ export const metadata: Metadata = {
     "AI診断で現在の状況を整理し、最適な行動を提案します。無料で匿名利用可能。",
   keywords: "退職診断,転職相談,キャリア診断,仕事の悩み,働き方",
   generator: "v0.dev",
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16', type: 'image/x-icon' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    other: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+  },
 }
 
 export default function RootLayout({
