@@ -24,7 +24,8 @@
       "Bash(ls:*)",
       "Bash(true)",
       "Bash(npx jest:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebFetch(domain:docs.anthropic.com)"
     ],
     "deny": []
   }
